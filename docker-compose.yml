@@ -1,0 +1,26 @@
+services:
+  api:
+    build: .
+    ports: ["127.0.0.1:8000:8000"]
+    environment:
+      CIPHERSCOPE_DATA_PATH: /app/data/demo_flows.jsonl
+      CIPHERSCOPE_REPORT_PATH: /app/output/reports/synthetic-evaluation.json
+      CIPHERSCOPE_ADMIN_TOKEN: ${CIPHERSCOPE_ADMIN_TOKEN:-local-demo-admin-token}
+    volumes:
+      - cipherscope_data:/app/data
+      - cipherscope_reports:/app/output
+    read_only: true
+    tmpfs: [/tmp:rw,noexec,nosuid,size=32m]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    pids_limit: 96
+    deploy:
+      resources:
+        limits: {memory: 512M, cpus: "1.00", pids: 96}
+  dashboard:
+    build: ./dashboard
+    ports: ["127.0.0.1:5173:80"]
+    depends_on: [api]
+volumes:
+  cipherscope_data:
+  cipherscope_reports:
