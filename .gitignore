@@ -1,0 +1,22 @@
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Data and local configuration
+/data/
+*.pcap
+*.pcapng
+.env
+.env.*
+!.env.example
+/output/reports/*.json
+!/output/reports/.gitkeep
+
+# Frontend
+dashboard/node_modules/
+dashboard/dist/
+dashboard/*.tsbuildinfo

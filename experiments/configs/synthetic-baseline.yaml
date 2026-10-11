@@ -1,0 +1,18 @@
+experiment: synthetic_cross_environment_baseline
+seed: 7
+data:
+  input: data/demo_flows.jsonl
+  purpose: generated examples for pipeline validation only
+flows:
+  idle_timeout_s: 120
+  active_timeout_s: 1800
+  min_packets: 4
+features:
+  views: [tabular, sequence, graph]
+  sequence_length: 64
+  exclude: [ip, port, mac, absolute_time]
+model:
+  family: random_forest
+  n_estimators: 100
+splits: [S1_random_caution_only, S4_cross_environment, S5_leave_one_environment_out]
+robustness: [padding_30pct, timing_jitter_200ms, first_8_packets]
