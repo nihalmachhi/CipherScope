@@ -67,6 +67,7 @@ def run_evaluation(dataset_path: str | Path, report_path: str | Path) -> dict[st
         }
     results["robustness"] = robustness
     results["limitations"] = [
+        "Synthetic labels are deliberately distinct; perfect scores only show the smoke-test pipeline works.",
         "Synthetic generated traffic is for pipeline validation only.",
         "No real-world generalization claim is made.",
         "Run at least three fixed seeds and licensed cross-dataset captures.",
