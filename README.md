@@ -1,37 +1,97 @@
 # CipherScope
 
-CipherScope is a privacy-first learning project for understanding encrypted network traffic from its **observable shape**: packet sizes, direction, timing, flow structure, and selected visible handshake metadata. This first milestone implements offline packet capture ingestion, hashed endpoint identifiers, tabular and sequence features, a simple beacon detector, leakage-aware splitters, an explainable-by-feature RandomForest baseline, a local API, and a React Router dashboard.
+**Understand encrypted network traffic from its shape, without ever decrypting it.**
 
-## Safety and privacy boundary
+CipherScope reads packet *metadata* (sizes, direction, timing, flow structure) from offline captures, turns it into features, and evaluates simple classifiers and a beacon detector the honest way: with leakage-aware splits, robustness tests and clear warnings about what the numbers do and don't prove.
 
-- Analyze only public research data, your own lab captures, or data you are authorized to process. Check the current license and known labeling issues before using any external dataset.
-- This project never decrypts or intercepts traffic. The PCAP reader uses packet headers, flags, timestamps, and frame lengths; it does not parse or save payload bytes.
-- Endpoint addresses are HMAC-hashed before the flow record is written. Raw addresses and ports are not feature columns. Absolute timestamps are used only for time splits/metadata, never model inputs.
-- Do not profile individual browsing behavior. Keep a retention period and rotate `CIPHERSCOPE_HASH_SALT` for real authorized datasets.
-- The generated demo is synthetic. Its metrics demonstrate that the pipeline runs; they are not evidence of network or threat-detection performance.
+---
 
-## Start locally
+## The problem
 
-Requirements: Python 3.11+, `uv`, Node.js 20+.
+Most traffic is encrypted now, so defenders can't read payloads. What's left is metadata, and that's where research and tooling get shaky:
 
-```powershell
+- **Privacy risk.** Working with raw captures means handling real IP addresses and ports, which can identify people and their browsing.
+- **Inflated results.** Many traffic-classification demos split flows randomly. Flows from the same capture, host or session land on both sides of the split, so the model memorizes instead of generalizing and the accuracy looks great for the wrong reason.
+- **Fragile models.** A classifier that works on clean traffic can fall apart when packets are padded, delayed or truncated, and few projects test for that.
+- **Hard to reproduce.** Feature extraction settings are rarely recorded, so nobody can tell whether two results came from the same pipeline.
+
+## What CipherScope does
+
+| Area | What it does |
+|------|--------------|
+| **Ingestion** | Reads authorized offline PCAPs using only headers, flags, timestamps and frame lengths. Payload bytes are never parsed or saved. |
+| **Privacy** | Endpoint addresses are HMAC-hashed before any flow record is written. Raw addresses and ports are never feature columns, and absolute timestamps never reach the model. |
+| **Flows** | Builds bidirectional flows with idle and active timeouts. |
+| **Features** | Tabular, sequence and graph-metadata views, plus a simple beacon detector for periodic callbacks. |
+| **Storage** | Schema-versioned JSONL with a hash of the extraction config, so results trace back to the exact pipeline. |
+| **Splits** | Five holdout strategies (random-flow caution, host, time, dataset, environment) to catch leakage. |
+| **Model** | An explainable-by-feature RandomForest baseline. |
+| **Evaluation** | Macro-F1, PR-AUC, ECE, FPR at a fixed recall, and robustness under padding, timing jitter and packet truncation. |
+| **Serving** | Local FastAPI backend and a React Router dashboard for flow shapes and results. |
+
+## Why it matters
+
+- **Privacy by design.** Hashing happens at ingest, so the stored data never contains raw endpoints. That's the right default for anything touching real network data.
+- **Honest evaluation.** Leakage-aware splits show how much of a "good" score is memorization. Reporting the random split only as a caution makes the gap visible instead of hiding it.
+- **Robustness is measured, not assumed.** Padding, jitter and truncation tests show how quickly the signal degrades, which matters because real attackers and real networks do all three.
+- **Reproducible.** Versioned records and a config hash make it possible to rerun and compare results.
+- **A foundation to build on.** The pipeline is end to end (PCAP to dashboard), so better models and datasets can be dropped in without redoing the plumbing.
+
+## Architecture
+
+```
+Authorized offline PCAP
+        |
+        v
+Headers / sizes / timing only (no payload)
+        |
+        v
+Bidirectional flows (idle + active timeouts)
+        |
+        v
+HMAC-hashed endpoint IDs
+        |
+        v
+Tabular + sequence + graph-metadata features
+        |
+        v
+Versioned JSONL feature store (+ config hash)
+        |
+        v
+Splits: S1 caution / S2 host / S3 time / S4 dataset / S5 environment
+        |
+        v
+RandomForest baseline
+        |
+        v
+Macro-F1, PR-AUC, ECE, FPR@recall, robustness
+        |
+        v
+FastAPI  -->  React Router dashboard
+```
+
+## Getting started
+
+**Requirements:** Python 3.11+, [uv](https://docs.astral.sh/uv/), Node.js 20+
+
+```bash
 uv sync --extra dev
 uv run python -m cipherscope.datasets.synthetic --output data/demo_flows.jsonl
 uv run python -m cipherscope.eval.runner
 uv run uvicorn cipherscope.api.main:app --reload
 ```
 
-Open a second terminal:
+In a second terminal:
 
-```powershell
+```bash
 cd dashboard
 npm ci
 npm run dev
 ```
 
-Open `http://127.0.0.1:5173`. The generated comparison report is at `output/reports/synthetic-evaluation.json`.
+Open <http://127.0.0.1:5173>. The comparison report is written to `output/reports/synthetic-evaluation.json`.
 
-To extract an authorized offline PCAP to a versioned feature JSONL:
+### Ingest your own authorized capture
 
 ```powershell
 uv run python -m cipherscope.cli ingest-pcap .\capture.pcap `
@@ -39,63 +99,65 @@ uv run python -m cipherscope.cli ingest-pcap .\capture.pcap `
   --label benign --output data/flows.jsonl
 ```
 
-This CLI does not upload capture files. Use explicit capture/environment IDs, and do not put personal data in labels.
+The CLI never uploads capture files. Use explicit capture and environment IDs, and keep personal data out of labels.
 
-## Reproduce and check
-
-```powershell
-uv run pytest
-uv run ruff check .
-uv run python -m cipherscope.eval.runner
-cd dashboard
-npm ci
-npm run build
-```
-
-Docker Compose (localhost only):
+### Docker (localhost only)
 
 ```powershell
 Copy-Item .env.example .env
-# Replace the sample salt and admin token in .env before using real authorized metadata.
+# Replace the sample salt and admin token before using real authorized metadata
 docker compose up --build
 ```
 
-The API listens at `127.0.0.1:8000`; the dashboard is `127.0.0.1:5173`. The synthetic feature file and report are persisted in named Docker volumes. The experiment endpoint requires `X-Admin-Token` matching `CIPHERSCOPE_ADMIN_TOKEN`.
+API on `127.0.0.1:8000`, dashboard on `127.0.0.1:5173`. The experiment endpoint requires an `X-Admin-Token` header matching `CIPHERSCOPE_ADMIN_TOKEN`.
 
-## What happens end to end
+### Verify
 
-```mermaid
-flowchart LR
-  PCAP[Authorized offline PCAP] --> Headers[Header / size / timing only]
-  Headers --> Flows[Bidirectional flows with idle and active timeouts]
-  Flows --> Hash[HMAC endpoint IDs]
-  Hash --> Features[Tabular, sequence and graph metadata]
-  Features --> Store[Versioned JSONL feature records]
-  Store --> Split[S1 caution / S2 host / S3 time / S4 dataset / S5 environment]
-  Split --> Model[RandomForest baseline]
-  Model --> Metrics[Macro-F1 / PR-AUC / ECE / FPR at recall / robustness]
-  Metrics --> API[FastAPI]
-  API --> UI[React Router dashboard]
+```bash
+uv run pytest
+uv run ruff check .
+uv run python -m cipherscope.eval.runner
+cd dashboard && npm ci && npm run build
 ```
 
-## Folder guide
+## Project layout
 
-- `cipherscope/ingest`: offline PCAP reader and CLI entrypoints.
-- `cipherscope/flows`: packet and flow records.
-- `cipherscope/features`: tabular, sequence, graph, and beacon views.
-- `cipherscope/privacy`: keyed identifier hashing.
-- `cipherscope/splits`: session, host, capture, time, dataset, and environment holdouts.
-- `cipherscope/models` and `cipherscope/eval`: baseline training and honest reports.
-- `cipherscope/robustness`: padding, timing jitter, and packet truncation transforms.
-- `cipherscope/store`: schema-versioned JSONL feature output with extraction-config hash.
-- `cipherscope/api`: local flow, beacon, graph, model, drift, experiment, and WebSocket endpoints.
-- `dashboard`: React Router UI for metadata flow shapes and evaluation results.
-- `experiments/configs`: reproducible demo experiment parameters.
-- `tests`: privacy, feature, split, beacon, and API checks.
-- `output/reports`: generated experiment reports; synthetic reports are ignored by Git.
+```
+cipherscope/
+  ingest/        offline PCAP reader and CLI
+  flows/         packet and flow records
+  features/      tabular, sequence, graph and beacon views
+  privacy/       keyed identifier hashing
+  splits/        session, host, capture, time, dataset, environment holdouts
+  models/        baseline training
+  eval/          honest evaluation reports
+  robustness/    padding, jitter and truncation transforms
+  store/         schema-versioned JSONL output
+  api/           flow, beacon, graph, model, drift, experiment, WebSocket endpoints
+dashboard/       React Router UI
+experiments/configs/   reproducible experiment parameters
+output/reports/        generated reports (synthetic ones are git-ignored)
+tests/                 privacy, feature, split, beacon and API checks
+```
 
-## Current scope and honest limitations
+## Safety and privacy boundary
 
-This is an end-to-end learning MVP, not the full research roadmap. The shipped classifier is a single tabular RandomForest. Sequence tensors and graph summaries are feature views, not trained deep sequence/GNN models. It does not yet parse TLS ClientHello, DNS, QUIC, Zeek, Parquet, MLflow, SHAP, stream live network interfaces, calibrate probabilities, or operate a model registry. The drift endpoint intentionally reports `not_configured`. The demo report includes random flow split only as a caution, a held-out synthetic environment, an explicit synthetic-data warning, and padding/jitter/truncation sensitivity; it must not be advertised as cross-dataset validation.
+- Use only public research data, your own lab captures, or data you're authorized to process. Check each external dataset's license and known labeling issues first.
+- CipherScope never decrypts or intercepts traffic.
+- Don't profile individual browsing behavior. Set a retention period and rotate `CIPHERSCOPE_HASH_SALT` for real authorized datasets.
+- The demo data is **synthetic**. Its metrics show the pipeline runs, not that it detects real threats.
 
-Before real-world conclusions, add licensed external datasets, capture-level duplicate/label cleaning, at least three seeds, calibration on a training-only grouped validation set, and cross-dataset results. Report failures and negative results alongside metrics.
+## Current scope and limitations
+
+This is an end-to-end learning MVP, not a finished research system.
+
+- The classifier is a single tabular RandomForest. Sequence tensors and graph summaries are feature views, not trained deep-learning models.
+- Not implemented yet: TLS ClientHello and DNS/QUIC parsing, Zeek, Parquet, MLflow, SHAP, live interface capture, probability calibration, a model registry.
+- The drift endpoint intentionally reports `not_configured`.
+- The demo report is not cross-dataset validation and shouldn't be presented as such.
+
+Before drawing real-world conclusions: add licensed external datasets, clean duplicates and labels at capture level, run at least three seeds, calibrate on a training-only grouped validation set, and report cross-dataset results alongside failures and negative results.
+
+## Author
+
+**Nihal Machhi** · [GitHub](https://github.com/nihalmachhi)
