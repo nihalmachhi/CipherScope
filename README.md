@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/readme-icon.png" alt="CipherScope icon" width="112" />
+</p>
+
 # CipherScope
 
 **Understand encrypted network traffic from its shape, without ever decrypting it.**
@@ -91,6 +95,10 @@ The CLI never uploads capture files. Use explicit capture and environment IDs, a
 
 ```powershell
 Copy-Item .env.example .env
+<p align="center">
+  <img src="assets/readme-icon.png" alt="CipherScope icon" width="112" />
+</p>
+
 # Replace the sample salt and admin token before using real authorized metadata
 docker compose up --build
 ```
