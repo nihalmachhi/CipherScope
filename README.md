@@ -2,7 +2,7 @@
   <img src="assets/readme-icon.png" alt="CipherScope icon" width="112" />
 </p>
 
-<h1 align="center">CipherScope</h1>
+<h1 align="center">CipherScope</h1>
 
 **Understand encrypted network traffic from its shape, without ever decrypting it.**
 
@@ -99,7 +99,7 @@ Copy-Item .env.example .env
   <img src="assets/readme-icon.png" alt="CipherScope icon" width="112" />
 </p>
 
-<h1 align="center">Replace the sample salt and admin token before using real authorized metadata</h1>
+# Replace the sample salt and admin token before using real authorized metadata
 docker compose up --build
 ```
 
