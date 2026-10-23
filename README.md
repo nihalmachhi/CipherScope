@@ -37,39 +37,25 @@ Most traffic is encrypted now, so defenders can't read payloads. What's left is 
 - **Reproducible.** Versioned records and a config hash make it possible to rerun and compare results.
 - **A foundation to build on.** The pipeline is end to end (PCAP to dashboard), so better models and datasets can be dropped in without redoing the plumbing.
 
-## Architecture
+## Architecture and how it works
 
-```
-Authorized offline PCAP
-        |
-        v
-Headers / sizes / timing only (no payload)
-        |
-        v
-Bidirectional flows (idle + active timeouts)
-        |
-        v
-HMAC-hashed endpoint IDs
-        |
-        v
-Tabular + sequence + graph-metadata features
-        |
-        v
-Versioned JSONL feature store (+ config hash)
-        |
-        v
-Splits: S1 caution / S2 host / S3 time / S4 dataset / S5 environment
-        |
-        v
-RandomForest baseline
-        |
-        v
-Macro-F1, PR-AUC, ECE, FPR@recall, robustness
-        |
-        v
-FastAPI  -->  React Router dashboard
+The pipeline uses authorized offline captures and only the observable metadata needed for flow analysis. It hashes endpoints before persistence, keeps absolute times out of model features, and evaluates with splits designed to reveal leakage.
+
+```mermaid
+flowchart LR
+  A[Authorized offline PCAP] --> B[Headers, sizes, direction, timing]
+  B --> C[Bidirectional flow assembly]
+  C --> D[HMAC endpoint pseudonyms]
+  D --> E[Tabular, sequence, and graph metadata]
+  E --> F[Versioned JSONL with config hash]
+  F --> G[Leakage-aware holdout splits]
+  G --> H[RandomForest baseline]
+  H --> I[Metrics and robustness checks]
+  I --> J[FastAPI]
+  J --> K[React Router dashboard]
 ```
 
+Payload bytes are never decoded or saved. Scores from the bundled synthetic data only show that the workflow runs; they do not establish detection performance on real encrypted traffic.
 ## Getting started
 
 **Requirements:** Python 3.11+, [uv](https://docs.astral.sh/uv/), Node.js 20+
@@ -161,3 +147,4 @@ Before drawing real-world conclusions: add licensed external datasets, clean dup
 ## Author
 
 **Nihal Machhi** · [GitHub](https://github.com/nihalmachhi)
+
