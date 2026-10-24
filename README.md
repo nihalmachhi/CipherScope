@@ -46,17 +46,20 @@ Most traffic is encrypted now, so defenders can't read payloads. What's left is 
 The pipeline uses authorized offline captures and only the observable metadata needed for flow analysis. It hashes endpoints before persistence, keeps absolute times out of model features, and evaluates with splits designed to reveal leakage.
 
 ```mermaid
-flowchart LR
-  A[Authorized offline PCAP] --> B[Headers, sizes, direction, timing]
-  B --> C[Bidirectional flow assembly]
-  C --> D[HMAC endpoint pseudonyms]
-  D --> E[Tabular, sequence, and graph metadata]
-  E --> F[Versioned JSONL with config hash]
-  F --> G[Leakage-aware holdout splits]
-  G --> H[RandomForest baseline]
-  H --> I[Metrics and robustness checks]
-  I --> J[FastAPI]
-  J --> K[React Router dashboard]
+flowchart TD
+  A[Authorized offline PCAP] --> B[Parse packet headers and supported protocols]
+  B --> C[Extract sizes, direction, timing, DNS, HTTP Host, and TLS SNI]
+  C --> D[Build bidirectional flows]
+  D --> E[HMAC endpoint pseudonyms before persistence]
+  E --> F[Metadata feature views: tabular, sequence, and graph]
+  F --> G[Versioned JSONL records and configuration hash]
+  G --> H[Capture-aware and other leakage-aware splits]
+  H --> I[RandomForest baseline and beacon analysis]
+  I --> J[Robustness checks: padding, jitter, and truncation]
+  J --> K[Metrics and evaluation report]
+  K --> L[FastAPI analysis endpoints]
+  L --> M[React Router dashboard]
+  B -. payload bytes are not stored .-> N[Privacy boundary]
 ```
 
 Payload bytes are never decoded or saved. Scores from the bundled synthetic data only show that the workflow runs; they do not establish detection performance on real encrypted traffic.
