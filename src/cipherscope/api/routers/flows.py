@@ -5,11 +5,12 @@ from typing import Any
 from fastapi import APIRouter, HTTPException, Query, Request
 
 from cipherscope.api.deps import get_repository
+from cipherscope.api.schemas import FlowDetail, FlowPage
 
 router = APIRouter(tags=["flows"])
 
 
-@router.get("/flows")
+@router.get("/flows", response_model=FlowPage)
 def list_flows(
     request: Request,
     label: str | None = Query(default=None, alias="class"),

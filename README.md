@@ -193,6 +193,20 @@ output/reports/  generated reports (git-ignored)
 tests/           privacy, ingestion, feature, split, model, store, runner and API checks
 ```
 
+## Claims and proof
+
+| Claim | Proof |
+|---|---|
+| Privacy by construction (HMAC ids, no payload) | `tests/test_pcap_ingestion.py`, `tests/test_privacy_beacon.py` |
+| Leakage-aware splits S1-S6 | `tests/test_splits.py`, `tests/test_runner.py` |
+| Beacon detector explainable | `tests/test_privacy_beacon.py` |
+| Multi-seed evaluation with bootstrap CIs | `tests/test_runner.py`, `output/reports/synthetic-evaluation.json` |
+| Drift endpoint | `tests/test_drift.py` |
+| Real dataset loaders with licence gating | `tests/test_datasets.py` |
+| CLI commands | `tests/test_cli.py` |
+
+Live site: https://nihalmachhi.github.io/CipherScope/
+
 ## Safety and scope
 
 - Use only public research data, your own lab captures, or data you are authorized to process.

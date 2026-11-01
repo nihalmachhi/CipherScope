@@ -24,3 +24,6 @@ format:
 
 site:
 	cd site && npm ci && npm run build
+
+site-fixtures:
+	uv run python site/scripts/export_fixtures.py

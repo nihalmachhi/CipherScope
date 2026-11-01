@@ -1,0 +1,26 @@
+@import "@fontsource-variable/bricolage-grotesque";
+@import "@fontsource-variable/instrument-sans";
+@import "@fontsource/jetbrains-mono/400.css";
+@import "@fontsource/jetbrains-mono/500.css";
+@import "./tokens.css";
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font: 400 1rem/1.6 var(--fb);
+  -webkit-font-smoothing: antialiased;
+}
+h1, h2, h3, p { margin: 0; }
+h1, h2, h3 { font-family: var(--fd); text-wrap: balance; }
+a { color: inherit; text-decoration: none; }
+:focus-visible { outline: 2px solid var(--wh); outline-offset: 3px; }
+.wrap { max-width: 1120px; margin: 0 auto; padding: 0 16px; }
+@media (max-width: 760px) { .links { display: none; } }
+.skip-link { position: absolute; left: -9999px; top: 0; }
+.skip-link:focus { left: 16px; top: 16px; z-index: 100; background: var(--wh); color: #111; padding: 8px 12px; border-radius: 8px; }
+.rise { opacity: 0; transform: translateY(6px); animation: rise 0.5s ease forwards; }
+@keyframes rise { to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .rise { animation: none; opacity: 1; transform: none; } }

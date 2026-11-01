@@ -5,12 +5,13 @@ from typing import Any
 from fastapi import APIRouter, HTTPException, Query, Request
 
 from cipherscope.api.deps import get_repository
+from cipherscope.api.schemas import DriftReport
 from cipherscope.drift.psi import chronological_drift
 
 router = APIRouter(tags=["drift"])
 
 
-@router.get("/drift")
+@router.get("/drift", response_model=DriftReport)
 def drift(
     request: Request,
     bins: int = Query(10, ge=2, le=50),
