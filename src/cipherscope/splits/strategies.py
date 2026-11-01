@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 import numpy as np
+from sklearn.model_selection import GroupKFold
 
 
 class SplitLeakageError(ValueError):
@@ -95,3 +96,21 @@ def leave_one_environment_out_folds(
     return {
         environment: leave_one_environment_out(rows, environment) for environment in environments
     }
+
+
+def capture_kfold(
+    rows: list[dict[str, Any]], n_splits: int = 5
+) -> dict[str, tuple[np.ndarray, np.ndarray]]:
+    """Return grouped K-fold splits where every capture stays in one partition."""
+    captures = sorted({str(row["capture_id"]) for row in rows})
+    if len(captures) < 2:
+        raise ValueError("Grouped K-fold needs at least two captures")
+    folds = min(n_splits, len(captures))
+    groups = np.asarray([str(row["capture_id"]) for row in rows])
+    result: dict[str, tuple[np.ndarray, np.ndarray]] = {}
+    for index, (train, test) in enumerate(
+        GroupKFold(n_splits=folds).split(np.zeros(len(rows)), groups=groups)
+    ):
+        assert_group_disjoint(rows, train, test, "capture_id")
+        result[f"fold-{index + 1}"] = (train, test)
+    return result

@@ -72,5 +72,5 @@ strict = true
 warn_unreachable = true
 
 [[tool.mypy.overrides]]
-module = ["scapy.*", "sklearn.*", "yaml.*"]
+module = ["scapy.*", "sklearn.*", "yaml.*", "torch.*", "pyarrow.*"]
 ignore_missing_imports = true

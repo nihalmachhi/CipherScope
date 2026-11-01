@@ -131,6 +131,26 @@ uv run python -m cipherscope.cli ingest-pcap capture.pcap \
 Only offline `.pcap`, `.pcapng` or `.cap` files are accepted. The CLI never uploads a capture.
 Use explicit capture and environment identifiers and keep personal data out of labels.
 
+A packet-level CSV export with the columns `timestamp,src_ip,dst_ip,src_port,dst_port,protocol,length`
+can also be normalised into the same flow schema:
+
+```bash
+uv run python -m cipherscope.cli ingest-csv packets.csv \
+  --capture-id office-lab-2026-10-11 \
+  --environment authorized-lab \
+  --output data/flows.jsonl
+```
+
+Registered research datasets are loaded only after you accept their licence:
+
+```bash
+uv run python -m cipherscope.cli load-dataset cic_ids2017 data/cic/ \
+  --i-accept-dataset-license \
+  --capture-id cic-lab \
+  --environment lab-beta \
+  --output data/flows.jsonl
+```
+
 ## Docker (loopback only)
 
 ```bash
@@ -157,8 +177,10 @@ make reproduce   # regenerate synthetic data and the report
 src/cipherscope/
   api/           app factory, lifespan, routers, in-memory repository, job queue
   core/          settings
-  ingest/        offline PCAP reader and CLI
+  ingest/        offline PCAP/CSV reader, flow assembler and CLI
   flows/         packet and flow records
+  datasets/      registered research datasets and their loaders
+  drift/         PSI and KS distribution-drift reports
   features/      tabular, sequence, graph and beacon views
   privacy/       fail-closed keyed hashing
   splits/        session, host, capture, time, dataset, environment holdouts
