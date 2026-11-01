@@ -5,8 +5,8 @@ services:
     environment:
       CIPHERSCOPE_DATA_PATH: /app/data/demo_flows.jsonl
       CIPHERSCOPE_REPORT_PATH: /app/output/reports/synthetic-evaluation.json
-      CIPHERSCOPE_ADMIN_TOKEN: ${CIPHERSCOPE_ADMIN_TOKEN:-local-demo-admin-token}
-      CIPHERSCOPE_HASH_SALT: ${CIPHERSCOPE_HASH_SALT:-local-demo-salt-change-me}
+      CIPHERSCOPE_ADMIN_TOKEN: ${CIPHERSCOPE_ADMIN_TOKEN:?set it in .env}
+      CIPHERSCOPE_HASH_SALT: ${CIPHERSCOPE_HASH_SALT:?set it in .env}
     volumes:
       - cipherscope_data:/app/data
       - cipherscope_reports:/app/output

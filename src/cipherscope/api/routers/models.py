@@ -20,8 +20,7 @@ def models(request: Request) -> dict[str, Any]:
             "models": [],
             "status": "not_evaluated",
             "message": (
-                "Run `uv run python -m cipherscope.eval.runner` to train and evaluate "
-                "the baseline."
+                "Run `uv run python -m cipherscope.eval.runner` to train and evaluate the baseline."
             ),
         }
     result = json.loads(report.read_text(encoding="utf-8"))
@@ -34,5 +33,6 @@ def models(request: Request) -> dict[str, Any]:
             }
         ],
         "data_kind": result["data_kind"],
+        "metadata": result.get("metadata", {}),
         "limitations": result["limitations"],
     }
