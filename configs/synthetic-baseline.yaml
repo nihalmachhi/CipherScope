@@ -1,8 +1,11 @@
 experiment: synthetic_cross_environment_baseline
 seed: 7
+seeds: [7, 13, 21]
 data:
   input: data/demo_flows.jsonl
   purpose: generated examples for pipeline validation only
+  train_dataset: campaign-1
+  test_dataset: campaign-2
 flows:
   idle_timeout_s: 120
   active_timeout_s: 1800
@@ -11,8 +14,17 @@ features:
   views: [tabular, sequence, graph]
   sequence_length: 64
   exclude: [ip, port, mac, absolute_time]
-model:
-  family: random_forest
-  n_estimators: 100
-splits: [S1_random_caution_only, S4_cross_environment, S5_leave_one_environment_out]
-robustness: [padding_30pct, timing_jitter_200ms, first_8_packets]
+models:
+  primary: random_forest
+  compare: [random_forest, hist_gbm, logreg]
+splits:
+  - S1_random_caution_only
+  - S2_grouped_host
+  - S3_time_forward
+  - S4_cross_dataset
+  - S5_leave_one_environment_out
+  - S6_capture_holdout
+robustness:
+  padding: [0.1, 0.3, 0.5]
+  jitter_s: [0.05, 0.2, 0.5]
+  truncation: [4, 8, 16, 32]

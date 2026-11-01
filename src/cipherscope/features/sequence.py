@@ -5,9 +5,7 @@ import math
 from cipherscope.flows.schema import FlowRecord
 
 
-def extract_sequence(
-    flow: FlowRecord, length: int = 64
-) -> tuple[list[list[float]], list[bool]]:
+def extract_sequence(flow: FlowRecord, length: int = 64) -> tuple[list[list[float]], list[bool]]:
     """Return a fixed-length ``[size, log interval, flags]`` tensor and its mask."""
     tensor = [[0.0, 0.0, 0.0] for _ in range(length)]
     mask = [False] * length
