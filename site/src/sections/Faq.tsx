@@ -1,14 +1,16 @@
 import { faq } from "../data/faq";
-import { Disclosure } from "../components/Disclosure";
 
 export function Faq() {
   return (
-    <section id="faq" style={{ padding: "84px 0 20px" }}>
+    <section className="sec" id="faq">
       <div className="wrap">
-        <h2 style={{ fontSize: "clamp(1.8rem,4vw,2.6rem)", letterSpacing: "-0.035em", lineHeight: 1.05, maxWidth: "18ch" }}>Any questions?</h2>
-        <div style={{ maxWidth: 820, margin: "30px auto 0" }}>
+        <h2>Any <i className="ico" style={{ "--c": "#ec4899" } as React.CSSProperties}><svg viewBox="0 0 24 24"><path d="M9.5 9a2.6 2.6 0 115 .6c0 1.8-2.5 2.2-2.5 4M12 17.5h.01"/></svg></i> <span className="m">questions?</span></h2>
+        <div className="faq">
           {faq.map((f) => (
-            <Disclosure key={f.q} question={f.q} answer={f.a} />
+            <details key={f.q}>
+              <summary>{f.q}</summary>
+              <p>{f.a}</p>
+            </details>
           ))}
         </div>
       </div>

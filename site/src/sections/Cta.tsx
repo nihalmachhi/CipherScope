@@ -1,13 +1,11 @@
 export function Cta() {
   return (
-    <section style={{ padding: "84px 0 20px" }}>
+    <section className="cta2" aria-label="Get started">
       <div className="wrap">
-        <div style={{ marginTop: 84, background: "var(--p)", border: "1px solid var(--ln)", borderRadius: 24, padding: "56px 20px 52px", textAlign: "center" }}>
-          <h2 style={{ fontSize: "clamp(1.8rem,4vw,2.6rem)", letterSpacing: "-0.035em", lineHeight: 1.28, maxWidth: "none", marginTop: 26 }}>Run it. Watch it get caught.</h2>
-          <div style={{ display: "flex", gap: 10, justifyContent: "center", marginTop: 24, flexWrap: "wrap" }}>
-            <a href="https://github.com/nihalmachhi/CipherScope" style={{ minHeight: 42, padding: "0 22px", borderRadius: 999, background: "var(--wh)", color: "#111", display: "inline-flex", alignItems: "center" }}>View on GitHub</a>
-            <a href="#try" style={{ minHeight: 42, padding: "0 22px", borderRadius: 999, background: "var(--p2)", border: "1px solid var(--ln)", display: "inline-flex", alignItems: "center" }}>Back to the simulator</a>
-          </div>
+        <h2>Run it.<br /><span className="m">Watch it get <i className="ico pulse" style={{ "--c": "#ef4444" } as React.CSSProperties}><svg viewBox="0 0 24 24"><path d="M12 8v5M12 17h.01"/></svg></i> caught.</span></h2>
+        <div className="btns">
+          <a className="pill w" href="https://github.com/nihalmachhi/CipherScope">View on GitHub</a>
+          <a className="pill" href="#try">Back to the simulator</a>
         </div>
       </div>
     </section>

@@ -18,7 +18,7 @@ export function Simulator() {
   const res = periodicityScore(times);
   const fires = res.score >= threshold;
   return (
-    <section id="try" style={{ padding: "84px 0 20px" }}>
+    <section className="sec" id="try">
       <div className="wrap">
         <h2 style={{ fontSize: "clamp(1.8rem,4vw,2.6rem)", letterSpacing: "-0.035em", lineHeight: 1.05, maxWidth: "18ch" }}>Beacon lab</h2>
         <p style={{ marginTop: 12, color: "var(--mu)", maxWidth: "60ch" }}>Generate synthetic flows and run a TypeScript port of the real beacon detector.</p>
