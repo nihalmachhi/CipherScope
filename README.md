@@ -1,144 +1,193 @@
 <p align="center">
-  <img src="assets/readme-icon.png" alt="CipherScope icon" width="112" />
+  <img src="assets/readme-icon.png" alt="CipherScope icon: a magnifier over a keyed network flow" width="112" />
 </p>
 
 <h1 align="center">CipherScope</h1>
 
-**Understand encrypted network traffic from its shape, without ever decrypting it.**
+<p align="center">
+  <a href="https://github.com/nihalmachhi/CipherScope/actions/workflows/ci.yml"><img src="https://github.com/nihalmachhi/CipherScope/actions/workflows/ci.yml/badge.svg" alt="CI status" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT License" /></a>
+  <img src="https://img.shields.io/badge/python-3.11%2B-blue.svg" alt="Python 3.11 or newer" />
+</p>
 
-CipherScope reads packet *metadata* (sizes, direction, timing, flow structure) from offline captures, turns it into features, and evaluates simple classifiers and a beacon detector the honest way: with leakage-aware splits, robustness tests and clear warnings about what the numbers do and don't prove.
+**See what encrypted traffic gives away, without decrypting a byte.**
+
+CipherScope reads packet *metadata* — sizes, direction, timing and flow structure — from
+authorized offline captures, turns it into privacy-safe features, and evaluates how well
+models spot beacons and classes of traffic on data they have never seen. It is honest about
+the hard parts: leakage-aware splits, robustness transforms, multiple seeds and a clear
+statement of what synthetic numbers do and do not prove.
 
 ---
 
-## The problem
+## Why this exists
 
-Most traffic is encrypted now, so defenders can't read payloads. What's left is metadata, and that's where research and tooling get shaky:
+Most traffic is encrypted, so defenders cannot read payloads. Metadata is what remains, and
+three problems make metadata work easy to get wrong:
 
-- **Privacy risk.** Working with raw captures means handling real IP addresses and ports, which can identify people and their browsing.
-- **Inflated results.** Many traffic-classification demos split flows randomly. Flows from the same capture, host or session land on both sides of the split, so the model memorizes instead of generalizing and the accuracy looks great for the wrong reason.
-- **Fragile models.** A classifier that works on clean traffic can fall apart when packets are padded, delayed or truncated, and few projects test for that.
-- **Hard to reproduce.** Feature extraction settings are rarely recorded, so nobody can tell whether two results came from the same pipeline.
+- **Privacy risk.** Raw captures carry IP addresses and ports that identify people. CipherScope
+  hashes endpoints with a keyed HMAC *before* anything is written.
+- **Inflated results.** Random flow splits put the same host, session or capture on both sides,
+  so a model memorises instead of generalising. CipherScope ships six split strategies and
+  reports the random split only as a caution.
+- **Fragile claims.** A clean-data score says little about padded, delayed or truncated traffic.
+  Robustness curves are part of every report.
 
-## What CipherScope does
+## Quick start
 
-| Area | What it does |
-|------|--------------|
-| **Ingestion** | Reads authorized offline PCAPs using only headers, flags, timestamps and frame lengths. Payload bytes are never parsed or saved. |
-| **Privacy** | Endpoint addresses are HMAC-hashed before any flow record is written. Raw addresses and ports are never feature columns, and absolute timestamps never reach the model. |
-| **Flows** | Builds bidirectional flows with idle and active timeouts. |
-| **Features** | Tabular, sequence and graph-metadata views, plus a simple beacon detector for periodic callbacks. |
-| **Storage** | Schema-versioned JSONL with a hash of the extraction config, so results trace back to the exact pipeline. |
-| **Splits** | Five holdout strategies (random-flow caution, host, time, dataset, environment) to catch leakage. |
-| **Model** | An explainable-by-feature RandomForest baseline. |
-| **Evaluation** | Macro-F1, PR-AUC, ECE, FPR at a fixed recall, and robustness under padding, timing jitter and packet truncation. |
-| **Serving** | Local FastAPI backend and a React Router dashboard for flow shapes and results. |
+```bash
+uv sync --extra dev
+cp .env.example .env            # then replace both placeholder secrets
+export CIPHERSCOPE_HASH_SALT="$(python -c 'import secrets; print(secrets.token_hex(24))')"
+export CIPHERSCOPE_ADMIN_TOKEN="$(python -c 'import secrets; print(secrets.token_hex(24))')"
+make reproduce                  # generate synthetic data + write the evaluation report
+uv run uvicorn cipherscope.api.main:create_app --factory --reload
+```
 
-## Why it matters
+Windows PowerShell:
 
-- **Privacy by design.** Hashing happens at ingest, so the stored data never contains raw endpoints. That's the right default for anything touching real network data.
-- **Honest evaluation.** Leakage-aware splits show how much of a "good" score is memorization. Reporting the random split only as a caution makes the gap visible instead of hiding it.
-- **Robustness is measured, not assumed.** Padding, jitter and truncation tests show how quickly the signal degrades, which matters because real attackers and real networks do all three.
-- **Reproducible.** Versioned records and a config hash make it possible to rerun and compare results.
-- **A foundation to build on.** The pipeline is end to end (PCAP to dashboard), so better models and datasets can be dropped in without redoing the plumbing.
+```powershell
+uv sync --extra dev
+Copy-Item .env.example .env
+$env:CIPHERSCOPE_HASH_SALT = -join ((48..57)+(97..102) | Get-Random -Count 48 | ForEach-Object {[char]$_})
+$env:CIPHERSCOPE_ADMIN_TOKEN = -join ((48..57)+(97..102) | Get-Random -Count 48 | ForEach-Object {[char]$_})
+make reproduce
+uv run uvicorn cipherscope.api.main:create_app --factory --reload
+```
 
-## Architecture and how it works
+The API listens on `127.0.0.1:8000`. The report is written to
+`output/reports/synthetic-evaluation.json`.
 
-The pipeline uses authorized offline captures and only the observable metadata needed for flow analysis. It hashes endpoints before persistence, keeps absolute times out of model features, and evaluates with splits designed to reveal leakage.
+## How it works
 
 ```mermaid
 flowchart LR
   A[Authorized offline PCAP] --> B[Headers, sizes, direction, timing]
-  B --> C[Bidirectional flow assembly]
+  B --> C[Bidirectional flows]
   C --> D[HMAC endpoint pseudonyms]
-  D --> E[Tabular, sequence, and graph metadata]
-  E --> F[Versioned JSONL with config hash]
-  F --> G[Leakage-aware holdout splits]
-  G --> H[RandomForest baseline]
-  H --> I[Metrics and robustness checks]
-  I --> J[FastAPI]
-  J --> K[React Router dashboard]
+  D --> E[Tabular, sequence and graph features]
+  E --> F[Versioned JSONL]
+  F --> G[Leakage-aware splits S1-S6]
+  G --> H[RandomForest, HistGradientBoosting, LogReg]
+  H --> I[Seeds, bootstrap CIs, robustness curves]
+  I --> J[Reproducible report]
+  J --> K[Local JSON API and WebSocket replay]
 ```
 
-Payload bytes are never decoded or saved. Scores from the bundled synthetic data only show that the workflow runs; they do not establish detection performance on real encrypted traffic.
-## Getting started
+A TCP flow closes on RST, once both directions have sent FIN and a short linger has passed,
+or on the idle/active timeout. Trailing ACKs stay in the same flow. The HMAC salt is required:
+the code refuses missing, short or placeholder values instead of silently using a public
+default. Stored rows are validated with pydantic and rejected when their schema version is
+unknown.
 
-**Requirements:** Python 3.11+, [uv](https://docs.astral.sh/uv/)
+## What the evaluation covers
+
+| Split | What it holds out | Why it matters |
+| --- | --- | --- |
+| `S1_random_caution_only` | random flows | shown only to expose how optimistic random splitting is |
+| `S2_grouped_host` | whole hosts | tests generalisation to new endpoints |
+| `S3_time_forward` | later traffic | tests forward-in-time generalisation |
+| `S4_cross_dataset` | a different capture campaign | tests cross-dataset transfer |
+| `S5_leave_one_environment_out` | each lab environment in turn | reports per-fold and pooled scores |
+| `S6_capture_holdout` | whole captures | catches capture-level leakage |
+
+Every split runs with seeds `7`, `13` and `21`; reports contain mean ± std, a bootstrap
+confidence interval, the git SHA, the config hash, library versions and a salt fingerprint.
+Robustness is measured under packet padding (10–50%), timing jitter (50–500 ms) and
+truncation (4/8/16/32 packets).
+
+Synthetic data is deliberately overlapping: periodic web polling is a hard negative for the
+beacon class, and slow or short streaming overlaps browsing. Scores are therefore not
+trivially `1.0`.
+
+## Claims → proof
+
+| Claim | Proof |
+| --- | --- |
+| Payload bytes are never stored; endpoints are keyed hashes | `tests/test_pcap_ingestion.py::test_offline_capture_keeps_only_hashed_metadata` |
+| A TCP close handshake stays one flow | `tests/test_pcap_ingestion.py::test_tcp_close_handshake_stays_one_flow` |
+| RST closes a flow immediately | `tests/test_pcap_ingestion.py::test_rst_closes_flow_immediately` |
+| A missing, short or placeholder salt fails closed | `tests/test_privacy_beacon.py` |
+| Beacon grouping is symmetric and thresholded | `tests/test_privacy_beacon.py::test_beacon_grouping_is_symmetric` |
+| S4 and S5 are different splits | `tests/test_splits.py::test_cross_dataset_split_differs_from_environment_folds` |
+| Stored rows are schema-validated | `tests/test_store.py` |
+| Reports contain ≥ 3 seeds, CIs and metadata | `tests/test_runner.py` |
+| Admin endpoints fail closed and are rate limited | `tests/test_api.py` |
+| WebSocket streams real replay alerts | `tests/test_api.py::test_websocket_replays_real_alerts` |
+
+Generated numbers come from code. Regenerate them with `make reproduce`; do not hand-copy
+metrics into prose.
+
+## Using your own authorized capture
 
 ```bash
-uv sync --extra dev
-uv run python -m cipherscope.datasets.synthetic --output data/demo_flows.jsonl
-uv run python -m cipherscope.eval.runner
-uv run uvicorn cipherscope.api.main:app --reload
+uv run python -m cipherscope.cli ingest-pcap capture.pcap \
+  --capture-id office-lab-2026-10-11 \
+  --environment authorized-lab \
+  --label benign \
+  --output data/flows.jsonl
 ```
 
-The comparison report is written to `output/reports/synthetic-evaluation.json`.
+Only offline `.pcap`, `.pcapng` or `.cap` files are accepted. The CLI never uploads a capture.
+Use explicit capture and environment identifiers and keep personal data out of labels.
 
-### Ingest your own authorized capture
+## Docker (loopback only)
 
-```powershell
-uv run python -m cipherscope.cli ingest-pcap .\capture.pcap `
-  --capture-id office-lab-2026-10-11 --environment authorized-lab `
-  --label benign --output data/flows.jsonl
-```
-
-The CLI never uploads capture files. Use explicit capture and environment IDs, and keep personal data out of labels.
-
-### Docker (localhost only)
-
-```powershell
-Copy-Item .env.example .env
-# Replace the sample salt and admin token before using real authorized metadata
+```bash
+cp .env.example .env   # replace both placeholders
 docker compose up --build
 ```
 
-API on `127.0.0.1:8000`. The experiment endpoint requires an `X-Admin-Token` header matching `CIPHERSCOPE_ADMIN_TOKEN`.
+Compose refuses to start without `CIPHERSCOPE_HASH_SALT` and `CIPHERSCOPE_ADMIN_TOKEN`
+(`${VAR:?message}`). The container runs as a non-root user with a read-only root filesystem,
+dropped capabilities and a health check.
 
-### Verify
+## Verify
 
 ```bash
-uv run pytest
-uv run ruff check .
-uv run python -m cipherscope.eval.runner
+make lint        # ruff check + ruff format --check
+make types       # mypy src
+make test        # pytest
+make reproduce   # regenerate synthetic data and the report
 ```
 
 ## Project layout
 
-```
+```text
 src/cipherscope/
+  api/           app factory, lifespan, routers, in-memory repository, job queue
+  core/          settings
   ingest/        offline PCAP reader and CLI
   flows/         packet and flow records
   features/      tabular, sequence, graph and beacon views
-  privacy/       keyed identifier hashing
+  privacy/       fail-closed keyed hashing
   splits/        session, host, capture, time, dataset, environment holdouts
-  models/        baseline training
-  eval/          honest evaluation reports
+  models/        one interface over RandomForest, HistGradientBoosting and LogReg
+  eval/          metrics, bootstrap, metadata and the config-driven runner
   robustness/    padding, jitter and truncation transforms
-  store/         schema-versioned JSONL output
-  api/           flow, beacon, graph, model, drift and experiment endpoints
+  store/         schema-validated JSONL
 configs/         reproducible experiment parameters
-output/reports/  generated reports (synthetic ones are git-ignored)
-tests/           privacy, feature, split, beacon and API checks
+output/reports/  generated reports (git-ignored)
+tests/           privacy, ingestion, feature, split, model, store, runner and API checks
 ```
 
-## Safety and privacy boundary
+## Safety and scope
 
-- Use only public research data, your own lab captures, or data you're authorized to process. Check each external dataset's license and known labeling issues first.
-- CipherScope never decrypts or intercepts traffic.
-- Don't profile individual browsing behavior. Set a retention period and rotate `CIPHERSCOPE_HASH_SALT` for real authorized datasets.
-- The demo data is **synthetic**. Its metrics show the pipeline runs, not that it detects real threats.
+- Use only public research data, your own lab captures, or data you are authorized to process.
+- CipherScope never decrypts, intercepts or inspects payload bytes, and never captures from a
+  live interface.
+- Do not profile individual people. Rotate `CIPHERSCOPE_HASH_SALT` between datasets.
+- The bundled data is **synthetic**. Its metrics show the pipeline works; they are not evidence
+  of real-world detection.
+- Not in this release: live capture, TLS ClientHello parsing, a model registry, production
+  deployment, or claims of real-world accuracy from synthetic data.
 
-## Current scope and limitations
+See [`SECURITY.md`](SECURITY.md) for reporting and the supported-version policy.
 
-This is an end-to-end learning MVP, not a finished research system.
+## License
 
-- The classifier is a single tabular RandomForest. Sequence tensors and graph summaries are feature views, not trained deep-learning models.
-- Not implemented yet: TLS ClientHello and DNS/QUIC parsing, Zeek, Parquet, MLflow, SHAP, live interface capture, probability calibration, a model registry.
-- The drift endpoint intentionally reports `not_configured`.
-- The demo report is not cross-dataset validation and shouldn't be presented as such.
-
-Before drawing real-world conclusions: add licensed external datasets, clean duplicates and labels at capture level, run at least three seeds, calibrate on a training-only grouped validation set, and report cross-dataset results alongside failures and negative results.
+MIT — see [`LICENSE`](LICENSE). Copyright (c) 2026 Nihal Machhi.
 
 ## Author
 
 **Nihal Machhi** · [GitHub](https://github.com/nihalmachhi)
-

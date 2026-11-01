@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    env:
+      CIPHERSCOPE_HASH_SALT: ci-only-salt-not-a-secret-0001
+      CIPHERSCOPE_ADMIN_TOKEN: ci-only-token-not-a-secret-0001
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - run: uv sync --frozen --extra dev
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+      - run: uv run mypy src
+      - run: uv run pytest -q --cov=cipherscope --cov-fail-under=80
+
+  docker:
+    runs-on: ubuntu-latest
+    env:
+      CIPHERSCOPE_HASH_SALT: ci-only-salt-not-a-secret-0001
+      CIPHERSCOPE_ADMIN_TOKEN: ci-only-token-not-a-secret-0001
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker compose config -q
+      - run: docker compose build
