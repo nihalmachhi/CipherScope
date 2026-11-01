@@ -83,3 +83,15 @@ def leave_one_environment_out(
     if not len(train) or not len(test):
         raise ValueError("Held-out environment and training environments must both be non-empty")
     return train, test
+
+
+def leave_one_environment_out_folds(
+    rows: list[dict[str, Any]],
+) -> dict[str, tuple[np.ndarray, np.ndarray]]:
+    """Return one train/test pair per environment, each holding that environment out."""
+    environments = sorted({str(row["environment"]) for row in rows})
+    if len(environments) < 2:
+        raise ValueError("Leave-one-environment-out needs at least two environments")
+    return {
+        environment: leave_one_environment_out(rows, environment) for environment in environments
+    }

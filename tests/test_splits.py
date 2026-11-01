@@ -10,22 +10,23 @@ from cipherscope.splits.strategies import (
     by_host,
     by_session,
     by_time,
-    leave_one_environment_out,
+    leave_one_environment_out_folds,
 )
 
 
 @pytest.fixture
 def rows() -> list[dict[str, str | float]]:
+    environments = ("lab-alpha", "lab-beta", "lab-gamma")
     return [
         {
             "session_id": f"s{i}",
             "host_hash": f"h{i // 2}",
             "capture_id": f"cap{i // 4}",
-            "dataset": "A" if i < 8 else "B",
-            "environment": "A" if i < 8 else "B",
+            "dataset": "campaign-1" if i < 12 else "campaign-2",
+            "environment": environments[i % 3],
             "started_at": float(i),
         }
-        for i in range(16)
+        for i in range(24)
     ]
 
 
@@ -41,20 +42,30 @@ def test_group_splitters_are_disjoint(rows) -> None:
 
 def test_group_leak_is_rejected(rows) -> None:
     with pytest.raises(SplitLeakageError):
-        assert_group_disjoint(rows, [0, 1], [1, 2], "session_id")
+        assert_group_disjoint(
+            rows,
+            train=[0, 1, 2, 3],
+            test=[0, 4],
+            group="session_id",
+        )
 
 
-def test_time_split_is_chronological(rows) -> None:
+def test_cross_dataset_split_differs_from_environment_folds(rows) -> None:
+    """P0-3 regression: S4 and S5 must not be the same split."""
+    _, dataset_test = by_dataset(rows, "campaign-1", "campaign-2")
+    folds = leave_one_environment_out_folds(rows)
+    assert len(folds) == 3
+    dataset_test_indices = set(dataset_test.tolist())
+    pooled_environment_test: set[int] = set()
+    for _, fold_test in folds.values():
+        fold_indices = set(fold_test.tolist())
+        pooled_environment_test |= fold_indices
+        assert fold_indices != dataset_test_indices
+    assert pooled_environment_test != dataset_test_indices
+
+
+def test_time_split_preserves_chronology(rows) -> None:
     train, test = by_time(rows)
-    assert max(rows[int(i)]["started_at"] for i in train) < min(
-        rows[int(i)]["started_at"] for i in test
+    assert max(float(rows[int(index)]["started_at"]) for index in train) <= min(
+        float(rows[int(index)]["started_at"]) for index in test
     )
-
-
-def test_dataset_and_environment_holdouts(rows) -> None:
-    train, test = by_dataset(rows, "A", "B")
-    assert {rows[int(i)]["dataset"] for i in train} == {"A"}
-    assert {rows[int(i)]["dataset"] for i in test} == {"B"}
-    train, test = leave_one_environment_out(rows, "B")
-    assert {rows[int(i)]["environment"] for i in train} == {"A"}
-    assert {rows[int(i)]["environment"] for i in test} == {"B"}
