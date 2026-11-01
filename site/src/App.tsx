@@ -4,7 +4,6 @@ import { Pipeline } from "./sections/Pipeline";
 import { Simulator } from "./sections/Simulator";
 import { Results } from "./sections/Results";
 import { Features } from "./sections/Features";
-import { Architecture } from "./sections/Architecture";
 import { QuickStart } from "./sections/QuickStart";
 import { Scope } from "./sections/Scope";
 import { Faq } from "./sections/Faq";
@@ -22,7 +21,6 @@ export default function App() {
         <Simulator />
         <Results />
         <Features />
-        <Architecture />
         <QuickStart />
         <Scope />
         <Faq />
