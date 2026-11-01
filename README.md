@@ -62,7 +62,7 @@ flowchart LR
 Payload bytes are never decoded or saved. Scores from the bundled synthetic data only show that the workflow runs; they do not establish detection performance on real encrypted traffic.
 ## Getting started
 
-**Requirements:** Python 3.11+, [uv](https://docs.astral.sh/uv/), Node.js 20+
+**Requirements:** Python 3.11+, [uv](https://docs.astral.sh/uv/)
 
 ```bash
 uv sync --extra dev
@@ -71,15 +71,7 @@ uv run python -m cipherscope.eval.runner
 uv run uvicorn cipherscope.api.main:app --reload
 ```
 
-In a second terminal:
-
-```bash
-cd dashboard
-npm ci
-npm run dev
-```
-
-Open <http://127.0.0.1:5173>. The comparison report is written to `output/reports/synthetic-evaluation.json`.
+The comparison report is written to `output/reports/synthetic-evaluation.json`.
 
 ### Ingest your own authorized capture
 
@@ -95,15 +87,11 @@ The CLI never uploads capture files. Use explicit capture and environment IDs, a
 
 ```powershell
 Copy-Item .env.example .env
-<p align="center">
-  <img src="assets/readme-icon.png" alt="CipherScope icon" width="112" />
-</p>
-
 # Replace the sample salt and admin token before using real authorized metadata
 docker compose up --build
 ```
 
-API on `127.0.0.1:8000`, dashboard on `127.0.0.1:5173`. The experiment endpoint requires an `X-Admin-Token` header matching `CIPHERSCOPE_ADMIN_TOKEN`.
+API on `127.0.0.1:8000`. The experiment endpoint requires an `X-Admin-Token` header matching `CIPHERSCOPE_ADMIN_TOKEN`.
 
 ### Verify
 
@@ -111,13 +99,12 @@ API on `127.0.0.1:8000`, dashboard on `127.0.0.1:5173`. The experiment endpoint 
 uv run pytest
 uv run ruff check .
 uv run python -m cipherscope.eval.runner
-cd dashboard && npm ci && npm run build
 ```
 
 ## Project layout
 
 ```
-cipherscope/
+src/cipherscope/
   ingest/        offline PCAP reader and CLI
   flows/         packet and flow records
   features/      tabular, sequence, graph and beacon views
@@ -127,11 +114,10 @@ cipherscope/
   eval/          honest evaluation reports
   robustness/    padding, jitter and truncation transforms
   store/         schema-versioned JSONL output
-  api/           flow, beacon, graph, model, drift, experiment, WebSocket endpoints
-dashboard/       React Router UI
-experiments/configs/   reproducible experiment parameters
-output/reports/        generated reports (synthetic ones are git-ignored)
-tests/                 privacy, feature, split, beacon and API checks
+  api/           flow, beacon, graph, model, drift and experiment endpoints
+configs/         reproducible experiment parameters
+output/reports/  generated reports (synthetic ones are git-ignored)
+tests/           privacy, feature, split, beacon and API checks
 ```
 
 ## Safety and privacy boundary

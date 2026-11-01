@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from fastapi.testclient import TestClient
 
-from cipherscope.api.main import Settings, create_app
+from cipherscope.api.main import create_app
+from cipherscope.core.settings import Settings
 
 
 def test_dashboard_api_offline_demo(tmp_path) -> None:

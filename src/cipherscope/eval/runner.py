@@ -9,6 +9,7 @@ import numpy as np
 from sklearn.metrics import f1_score
 
 from cipherscope.features.tabular import extract_tabular
+from cipherscope.flows.schema import FlowRecord
 from cipherscope.models.tabular import evaluate, train_baseline
 from cipherscope.robustness.perturb import perturb_padding, perturb_timing, truncate_packets
 from cipherscope.splits.strategies import by_dataset, leave_one_environment_out
@@ -55,7 +56,7 @@ def run_evaluation(dataset_path: str | Path, report_path: str | Path) -> dict[st
         ("first_8_packets", [truncate_packets(row, 8) for row in test_rows]),
     ):
         copies = [
-            {**row, "features": extract_tabular_from_dict(flow)}
+            {**row, "features": extract_tabular(FlowRecord.from_row(flow))}
             for row, flow in zip(test_rows, transformed, strict=True)
         ]
         truth = encoder.transform([row["label"] for row in copies])
@@ -76,25 +77,6 @@ def run_evaluation(dataset_path: str | Path, report_path: str | Path) -> dict[st
     destination.parent.mkdir(parents=True, exist_ok=True)
     destination.write_text(json.dumps(results, indent=2), encoding="utf-8")
     return results
-
-
-def extract_tabular_from_dict(flow: dict[str, Any]) -> dict[str, float]:
-    from cipherscope.flows.schema import FlowRecord, PacketRecord
-
-    packets = [PacketRecord(**packet) for packet in flow["packets"]]
-    record = FlowRecord(
-        flow["flow_id"],
-        flow["host_hash"],
-        flow["peer_hash"],
-        flow["capture_id"],
-        flow["environment"],
-        flow["label"],
-        flow["started_at"],
-        "tcp",
-        packets,
-        packets[-1].timestamp if packets else flow["started_at"],
-    )
-    return extract_tabular(record)
 
 
 def _random_split(rows: list[dict[str, Any]], seed: int) -> tuple[np.ndarray, np.ndarray]:

@@ -5,18 +5,32 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+build/
+dist/
+*.egg-info/
 
 # Data and local configuration
 /data/
 *.pcap
 *.pcapng
+*.cap
 .env
 .env.*
 !.env.example
 /output/reports/*.json
 !/output/reports/.gitkeep
 
-# Frontend
-dashboard/node_modules/
-dashboard/dist/
-dashboard/*.tsbuildinfo
+# Node
+node_modules/
+site/dist/
+site/.vite/
+*.tsbuildinfo
+
+# Editors and OS noise
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

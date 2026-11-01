@@ -7,14 +7,20 @@ demo:
 evaluate:
 	uv run python -m cipherscope.eval.runner
 
+reproduce: demo evaluate
+
 test:
 	uv run pytest
 
 lint:
 	uv run ruff check .
+	uv run ruff format --check .
+
+types:
+	uv run mypy src
 
 format:
-	uv run ruff format cipherscope tests
+	uv run ruff format src tests
 
-frontend:
-	cd dashboard && npm ci && npm run build
+site:
+	cd site && npm ci && npm run build

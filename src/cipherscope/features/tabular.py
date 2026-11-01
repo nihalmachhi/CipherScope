@@ -57,19 +57,3 @@ def extract_tabular(flow: FlowRecord) -> dict[str, float]:
                 sum(min(15, size * 16 // 1501) == index for size in sizes) / total
             )
     return result
-
-
-def extract_sequence(flow: FlowRecord, length: int = 64) -> tuple[list[list[float]], list[bool]]:
-    tensor = [[0.0, 0.0, 0.0] for _ in range(length)]
-    mask = [False] * length
-    previous = flow.packets[0].timestamp if flow.packets else 0.0
-    for index, packet in enumerate(flow.packets[:length]):
-        interval_ms = max(0.0, packet.timestamp - previous) * 1000
-        tensor[index] = [
-            packet.direction * min(packet.size, 1500) / 1500,
-            math.log1p(interval_ms),
-            packet.tcp_flags / 255,
-        ]
-        mask[index] = True
-        previous = packet.timestamp
-    return tensor, mask

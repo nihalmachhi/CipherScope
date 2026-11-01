@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from cipherscope.features.tabular import extract_sequence, extract_tabular
+from cipherscope.features.sequence import extract_sequence
+from cipherscope.features.tabular import extract_tabular
 from cipherscope.flows.schema import FlowRecord, PacketRecord
 
 
