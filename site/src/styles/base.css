@@ -23,4 +23,5 @@ a { color: inherit; text-decoration: none; }
 .skip-link:focus { left: 16px; top: 16px; z-index: 100; background: var(--wh); color: #111; padding: 8px 12px; border-radius: 8px; }
 .rise { opacity: 0; transform: translateY(6px); animation: rise 0.5s ease forwards; }
 @keyframes rise { to { opacity: 1; transform: none; } }
-@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .rise { animation: none; opacity: 1; transform: none; } }
+@keyframes fill { to { transform: scaleX(1); } }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .rise { animation: none; opacity: 1; transform: none; } .bar { display: none; } }

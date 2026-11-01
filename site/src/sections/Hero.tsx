@@ -1,4 +1,5 @@
 import { content } from "../data/content";
+import { Window } from "../components/Window";
 
 export function Hero() {
   return (
@@ -10,6 +11,9 @@ export function Hero() {
       <div style={{ display: "flex", gap: 10, justifyContent: "center", marginTop: 20, flexWrap: "wrap" }}>
         <a href="#start" style={{ minHeight: 42, padding: "0 22px", borderRadius: 999, background: "var(--wh)", color: "#111", display: "inline-flex", alignItems: "center" }}>Run it locally</a>
         <a href="https://github.com/nihalmachhi/CipherScope" style={{ minHeight: 42, padding: "0 22px", borderRadius: 999, background: "var(--p2)", border: "1px solid var(--ln)", display: "inline-flex", alignItems: "center" }}>View on GitHub</a>
+      </div>
+      <div className="wrap">
+        <Window />
       </div>
     </header>
   );

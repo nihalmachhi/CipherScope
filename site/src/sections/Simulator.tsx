@@ -28,6 +28,7 @@ export function Simulator() {
             <label>Jitter (%): {jitter}<br /><input type="range" min={0} max={60} value={jitter} onChange={(e) => setJitter(+e.target.value)} /></label><br />
             <label>Connections: {n}<br /><input type="range" min={4} max={20} value={n} onChange={(e) => setN(+e.target.value)} /></label><br />
             <label>Threshold: {threshold.toFixed(2)}<br /><input type="range" min={0.5} max={0.95} step={0.05} value={threshold} onChange={(e) => setThreshold(+e.target.value)} /></label>
+            <button onClick={() => { setJitter(60); setPeriod(30); }} style={{ marginTop: 12, padding: "6px 12px", borderRadius: 8, border: "1px solid var(--ln)", background: "var(--p2)", color: "var(--fg)", cursor: "pointer" }}>Make it evade</button>
           </div>
           <div style={{ background: "var(--p)", border: "1px solid var(--ln)", borderRadius: 16, padding: 20, fontFamily: "var(--fm)", fontSize: "0.85rem" }}>
             <div>score: {res.score}</div>
