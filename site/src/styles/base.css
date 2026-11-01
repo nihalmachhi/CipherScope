@@ -24,4 +24,8 @@ a { color: inherit; text-decoration: none; }
 .rise { opacity: 0; transform: translateY(6px); animation: rise 0.5s ease forwards; }
 @keyframes rise { to { opacity: 1; transform: none; } }
 @keyframes fill { to { transform: scaleX(1); } }
+@keyframes dash { to { stroke-dashoffset: -16; } }
+@keyframes stl { 0%,16%,100% { stroke: #242428; fill: #19191c; } 6% { stroke: #a78bfa; fill: #211d2e; } }
+@keyframes stlb { 0%,16%,100% { stroke: #242428; fill: #19191c; } 6% { stroke: #ff7a45; fill: #2a1d17; } }
+@media (max-width: 800px) { .bento > div { grid-column: 1 / -1 !important; } }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .rise { animation: none; opacity: 1; transform: none; } .bar { display: none; } }
