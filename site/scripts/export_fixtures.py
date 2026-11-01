@@ -20,7 +20,9 @@ def main() -> None:
         "jittered": [0.0, 28.0, 63.0, 89.0, 125.0, 148.0],
         "web_burst": [0.0, 0.2, 0.4, 5.0, 5.1, 10.0],
     }
-    fixtures = {name: {"times": times, "result": periodicity_score(times)} for name, times in cases.items()}
+    fixtures = {
+        name: {"times": times, "result": periodicity_score(times)} for name, times in cases.items()
+    }
     (OUT / "beacon.json").write_text(json.dumps(fixtures, indent=2), encoding="utf-8")
 
     report = json.loads(REPORT.read_text(encoding="utf-8"))

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
 
 from cipherscope.flows.schema import FlowRecord, PacketRecord
 from cipherscope.privacy.hashing import hash_identifier
@@ -44,7 +43,9 @@ def read_zeek_conn_log(
         responder = _value(row, "id.resp_h")
         protocol = _value(row, "proto", "tcp").lower()
         duration = float(_value(row, "duration", "0") or 0)
-        size = int(_value(row, "orig_ip_bytes", "0") or 0) + int(_value(row, "resp_ip_bytes", "0") or 0)
+        size = int(_value(row, "orig_ip_bytes", "0") or 0) + int(
+            _value(row, "resp_ip_bytes", "0") or 0
+        )
         flow = FlowRecord(
             flow_id=hash_identifier(f"{capture_id}:zeek:{index}:{ts:.6f}", salt),
             host_hash=hash_identifier(origin, salt),

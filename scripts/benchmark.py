@@ -20,15 +20,19 @@ def main() -> int:
     best = None
     for _ in range(args.repeats):
         start = time.perf_counter()
-        flows = read_pcap(path, capture_id=args.capture_id, environment=args.environment, salt=args.salt)
+        flows = read_pcap(
+            path, capture_id=args.capture_id, environment=args.environment, salt=args.salt
+        )
         elapsed = time.perf_counter() - start
         total_packets = sum(len(flow.packets) for flow in flows)
         rate = total_packets / elapsed if elapsed else float("inf")
         if best is None or rate > best[0]:
             best = (rate, len(flows), total_packets, elapsed)
-    assert best is not None
+    if best is None:
+        return 1
     rate, flow_count, packet_count, elapsed = best
-    print(f"flows={flow_count} packets={packet_count} elapsed_s={elapsed:.4f} packets_per_second={rate:.1f}")
+    print(f"flows={flow_count} packets={packet_count}")
+    print(f"elapsed_s={elapsed:.4f} packets_per_second={rate:.1f}")
     return 0
 
 

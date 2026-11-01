@@ -5,7 +5,7 @@ from typing import Any
 from fastapi import APIRouter, HTTPException, Query, Request
 
 from cipherscope.api.deps import get_repository
-from cipherscope.api.schemas import FlowDetail, FlowPage
+from cipherscope.api.schemas import FlowPage
 
 router = APIRouter(tags=["flows"])
 
