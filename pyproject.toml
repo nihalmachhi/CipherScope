@@ -27,7 +27,7 @@ dev = [
   "types-PyYAML>=6,<7",
 ]
 parquet = ["pyarrow>=17,<22"]
-deep = ["torch>=2.4,<3"]
+deep = ["torch>=2.15.0,<3"]
 
 [build-system]
 requires = ["hatchling"]
