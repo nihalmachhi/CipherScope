@@ -47,6 +47,7 @@ class FlowAssembler:
         idle_timeout_s: float = 120.0,
         active_timeout_s: float = 1800.0,
         fin_linger_s: float = 5.0,
+        max_active_flows: int = 100_000,
     ) -> None:
         self.capture_id = capture_id
         self.environment = environment
@@ -56,21 +57,20 @@ class FlowAssembler:
         self.idle_timeout_s = idle_timeout_s
         self.active_timeout_s = active_timeout_s
         self.fin_linger_s = fin_linger_s
-        self._pseudonyms: dict[str, str] = {}
+        self.max_active_flows = max(1, max_active_flows)
         self._active: dict[FlowKey, _FlowState] = {}
+        self._states: dict[int, _FlowState] = {}
         self._completed: list[FlowRecord] = []
 
     def _pseudonym(self, value: str) -> str:
-        cached = self._pseudonyms.get(value)
-        if cached is None:
-            cached = self._pseudonyms[value] = hash_identifier(value, self.salt)
-        return cached
+        return hash_identifier(value, self.salt)
 
     def _close(self, state: _FlowState) -> None:
         last = state.flow.packets[-1].timestamp if state.flow.packets else state.flow.started_at
         state.flow.completed_at = last
         for key in state.keys:
             self._active.pop(key, None)
+        self._states.pop(id(state), None)
 
     def add(self, header: PacketHeader) -> None:
         """Append one packet header to its flow, creating or closing as needed."""
@@ -101,9 +101,14 @@ class FlowAssembler:
             )
             if expired:
                 self._close(state)
+                self._completed.append(state.flow)
                 state = None
 
         if state is None:
+            if len(self._states) >= self.max_active_flows:
+                oldest = min(self._states.values(), key=lambda item: item.flow.started_at)
+                self._close(oldest)
+                self._completed.append(oldest.flow)
             state = _FlowState(
                 flow=FlowRecord(
                     flow_id=self._pseudonym(f"{self.capture_id}:{forward}:{header.timestamp:.6f}"),
@@ -119,6 +124,7 @@ class FlowAssembler:
                 source=header.source,
                 keys=(forward, reverse),
             )
+            self._states[id(state)] = state
             self._active[forward] = state
             self._active[reverse] = state
 
@@ -148,5 +154,10 @@ class FlowAssembler:
         for state in {id(state): state for state in self._active.values()}.values():
             self._close(state)
             self._completed.append(state.flow)
+        return self.drain_completed()
+
+    def drain_completed(self) -> list[FlowRecord]:
+        """Return finished flows and release their temporary output buffer."""
         unique = {flow.flow_id: flow for flow in self._completed}
+        self._completed.clear()
         return list(unique.values())

@@ -1,0 +1,9 @@
+#separator \x09
+#set_separator ,
+#empty_field (empty)
+#unset_field -
+#path conn
+#open 2026-11-03-10-00-00
+#fields	ts	id.orig_h	id.orig_p	id.resp_h	id.resp_p	proto	duration	orig_ip_bytes	resp_ip_bytes
+1700000000.0	192.0.2.10	43122	198.51.100.8	443	tcp	1.25	1200	2400
+#close 2026-11-03-10-01-00

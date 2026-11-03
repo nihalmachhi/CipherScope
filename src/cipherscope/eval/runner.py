@@ -9,19 +9,26 @@ import numpy as np
 import yaml
 from sklearn.metrics import f1_score
 
+from cipherscope.eval.beacon_benchmark import evaluate_synthetic_beacons
 from cipherscope.eval.bootstrap import bootstrap_ci
-from cipherscope.eval.metrics import evaluate_predictions, pooled_predictions
+from cipherscope.eval.metrics import (
+    evaluate_predictions,
+    expected_calibration_error,
+    pooled_predictions,
+)
 from cipherscope.eval.report import build_metadata
 from cipherscope.features.tabular import extract_tabular
 from cipherscope.flows.schema import FlowRecord
 from cipherscope.models.base import feature_names, train
+from cipherscope.models.calibration import calibrate
+from cipherscope.models.explain import top_permutation_importance
 from cipherscope.privacy.hashing import InsecureSaltError, salt_fingerprint
 from cipherscope.robustness.perturb import perturb_padding, perturb_timing, truncate_packets
 from cipherscope.splits.strategies import (
-    by_capture,
     by_dataset,
     by_host,
     by_time,
+    capture_kfold,
     leave_one_environment_out_folds,
 )
 from cipherscope.store.jsonl import load_rows
@@ -232,6 +239,36 @@ def _model_comparison(
     return comparison
 
 
+def _calibration_evaluation(
+    rows: list[dict[str, Any]],
+    names: list[str],
+    train_idx: np.ndarray,
+    test_idx: np.ndarray,
+    family: str,
+    seeds: list[int],
+) -> dict[str, Any]:
+    """Compare uncalibrated and train-only grouped-isotonic probabilities."""
+    per_seed: dict[str, dict[str, float]] = {}
+    test_rows = [rows[int(index)] for index in test_idx]
+    for seed in seeds:
+        baseline = train(rows, train_idx, names, family, seed)
+        calibrated = calibrate(rows, train_idx, names, family, seed)
+        truth = baseline.encoder.transform([str(row["label"]) for row in test_rows])
+        before = baseline.predict_proba(test_rows)
+        after = calibrated.predict_proba(test_rows)
+        per_seed[str(seed)] = {
+            "ece_before": expected_calibration_error(truth, before),
+            "ece_after": expected_calibration_error(truth, after),
+        }
+    return {
+        "method": "isotonic calibration with GroupKFold(host_hash) inside training rows only",
+        "test_partition": "configured S4 cross-dataset holdout",
+        "per_seed": per_seed,
+        "mean_ece_before": float(np.mean([value["ece_before"] for value in per_seed.values()])),
+        "mean_ece_after": float(np.mean([value["ece_after"] for value in per_seed.values()])),
+    }
+
+
 def _data_kind(rows: list[dict[str, Any]]) -> str:
     synthetic = all(
         str(row.get("environment", "")).startswith(SYNTHETIC_PREFIXES)
@@ -270,7 +307,13 @@ def run_evaluation(
         "S5_leave_one_environment_out": _evaluate_folds(
             rows, names, leave_one_environment_out_folds(rows), family, seed_list
         ),
-        "S6_capture_holdout": _evaluate_pair(rows, names, *by_capture(rows), family, seed_list),
+        "S6_capture_kfold": _evaluate_folds(
+            rows,
+            names,
+            capture_kfold(rows, int(config.get("capture_folds", 5))),
+            family,
+            seed_list,
+        ),
     }
 
     try:
@@ -302,6 +345,15 @@ def run_evaluation(
             *primary_split,
             [str(item) for item in config["models"]["compare"]],
             seed_list[0],
+        ),
+        "calibration": _calibration_evaluation(rows, names, *primary_split, family, seed_list),
+        "beacon_detector": evaluate_synthetic_beacons(seed_list[0]),
+        "permutation_importance": top_permutation_importance(
+            train(rows, primary_split[0], names, family, seed_list[0]),
+            [rows[int(index)] for index in primary_split[1]],
+            seed=seed_list[0],
+            repeats=5,
+            limit=12,
         ),
         "splits": splits,
         "robustness": _robustness(rows, names, *primary_split, family, seed_list[0], config),

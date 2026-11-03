@@ -12,6 +12,9 @@ All notable changes to this project are documented in this file.
 - Optional 1D-CNN sequence model, isotonic calibration and permutation importance.
 - React marketing site in `site/`.
 - Structured JSON logging, pydantic API response models and pagination.
+- Capture-grouped K-fold results, train-only isotonic calibration, permutation importance, and a seeded beacon precision/recall smoke benchmark.
+- Streaming PCAP iteration with a bounded active-flow table and completion buffer.
+- Restored the local dashboard with the existing project icon and matching dark palette; added its production build to CI.
 
 ### Fixed
 - P0-1 FIN handling in PCAP ingestion.
@@ -30,4 +33,4 @@ All notable changes to this project are documented in this file.
 - P2-4 required secrets in compose.
 
 ### Decisions
-- No dashboard directory is shipped; the site replaces it.
+- The local dashboard is retained alongside the marketing site: it remains the interactive API client, while the site explains the project and provides a synthetic browser demo.

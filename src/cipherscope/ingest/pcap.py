@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Iterator
 from pathlib import Path
 
 from scapy.all import (  # type: ignore[attr-defined]
@@ -32,11 +33,42 @@ def read_pcap(
     active_timeout_s: float = 1800.0,
     fin_linger_s: float = 5.0,
 ) -> list[FlowRecord]:
-    """Stream packet headers and sizes only; payload bytes are never inspected.
+    """Read an offline capture into memory for callers that need a list."""
+    return list(
+        iter_pcap(
+            path,
+            capture_id=capture_id,
+            environment=environment,
+            dataset=dataset,
+            label=label,
+            salt=salt,
+            idle_timeout_s=idle_timeout_s,
+            active_timeout_s=active_timeout_s,
+            fin_linger_s=fin_linger_s,
+        )
+    )
+
+
+def iter_pcap(
+    path: str | Path,
+    *,
+    capture_id: str,
+    environment: str,
+    dataset: str | None = None,
+    label: str | None = None,
+    salt: str | None = None,
+    idle_timeout_s: float = 120.0,
+    active_timeout_s: float = 1800.0,
+    fin_linger_s: float = 5.0,
+    max_active_flows: int = 100_000,
+) -> Iterator[FlowRecord]:
+    """Yield completed flows while reading packet headers one at a time.
 
     A TCP flow closes on RST, once both directions have sent FIN and the linger
     window has passed, or on the idle/active timeouts. Trailing ACKs stay in the
-    same flow instead of starting a spurious one-packet flow.
+    same flow instead of starting a spurious one-packet flow. The active-flow
+    limit and drained completion buffer bound working memory independently of
+    the total capture size.
     """
     source = Path(path)
     if source.suffix.lower() not in SUPPORTED_SUFFIXES:
@@ -51,7 +83,9 @@ def read_pcap(
         idle_timeout_s=idle_timeout_s,
         active_timeout_s=active_timeout_s,
         fin_linger_s=fin_linger_s,
+        max_active_flows=max_active_flows,
     )
+    reader = None
     try:
         reader = PcapReader(str(source))
         for packet in reader:
@@ -81,7 +115,10 @@ def read_pcap(
                     tcp_flags=flags,
                 )
             )
-        reader.close()
+            yield from assembler.drain_completed()
     except (OSError, ValueError, EOFError) as exc:
         raise PcapIngestError(f"Could not read capture {source.name}: {exc}") from exc
-    return assembler.finish()
+    finally:
+        if reader is not None:
+            reader.close()
+    yield from assembler.finish()

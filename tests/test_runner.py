@@ -43,7 +43,7 @@ def test_report_covers_seeds_splits_and_metadata(tmp_path: Path) -> None:
         "S3_time_forward",
         "S4_cross_dataset",
         "S5_leave_one_environment_out",
-        "S6_capture_holdout",
+        "S6_capture_kfold",
     }
     folds = report["splits"]["S5_leave_one_environment_out"]["folds"]
     assert set(folds) == set(ENVIRONMENTS)
@@ -51,6 +51,28 @@ def test_report_covers_seeds_splits_and_metadata(tmp_path: Path) -> None:
     assert set(summary) == {"mean", "std", "values", "seed_bootstrap_ci"}
     assert len(summary["values"]) == 2
     assert "bootstrap_macro_f1" in report["splits"]["S4_cross_dataset"]
+    capture_folds = report["splits"]["S6_capture_kfold"]["folds"]
+    assert len(capture_folds) == 5
+    assert all("summary" in fold for fold in capture_folds.values())
+    assert report["calibration"]["mean_ece_before"] >= 0.0
+    assert report["calibration"]["mean_ece_after"] >= 0.0
+    assert report["calibration"]["per_seed"]
+    assert set(report["beacon_detector"]["results"]) == {
+        "jitter_0pct",
+        "jitter_15pct",
+        "jitter_30pct",
+        "jitter_50pct",
+    }
+    assert all(
+        0 <= value["precision"] <= 1 and 0 <= value["recall"] <= 1
+        for value in report["beacon_detector"]["results"].values()
+    )
+    assert report["permutation_importance"]
+    assert set(report["permutation_importance"][0]) == {
+        "feature",
+        "importance_mean",
+        "importance_std",
+    }
     assert report["robustness"]["clean"]["macro_f1"] >= 0.0
     assert "clean" in report["robustness"]
 

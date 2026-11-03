@@ -36,7 +36,7 @@ three problems make metadata work easy to get wrong:
 ## Quick start
 
 ```bash
-uv sync --extra dev
+uv sync --frozen --extra dev
 cp .env.example .env            # then replace both placeholder secrets
 export CIPHERSCOPE_HASH_SALT="$(python -c 'import secrets; print(secrets.token_hex(24))')"
 export CIPHERSCOPE_ADMIN_TOKEN="$(python -c 'import secrets; print(secrets.token_hex(24))')"
@@ -89,7 +89,7 @@ unknown.
 | `S3_time_forward` | later traffic | tests forward-in-time generalisation |
 | `S4_cross_dataset` | a different capture campaign | tests cross-dataset transfer |
 | `S5_leave_one_environment_out` | each lab environment in turn | reports per-fold and pooled scores |
-| `S6_capture_holdout` | whole captures | catches capture-level leakage |
+| `S6_capture_kfold` | held-out capture folds | catches capture-level leakage across several captures |
 
 Every split runs with seeds `7`, `13` and `21`; reports contain mean ± std, a bootstrap
 confidence interval, the git SHA, the config hash, library versions and a salt fingerprint.
@@ -114,6 +114,9 @@ trivially `1.0`.
 | Reports contain ≥ 3 seeds, CIs and metadata | `tests/test_runner.py` |
 | Admin endpoints fail closed and are rate limited | `tests/test_api.py` |
 | WebSocket streams real replay alerts | `tests/test_api.py::test_websocket_replays_real_alerts` |
+| PCAP iteration yields completed flows as it reads | `tests/test_pcap_ingestion.py::test_pcap_iterator_yields_closed_flows_before_capture_ends` |
+| Active flow state is bounded | `tests/test_pcap_ingestion.py::test_assembler_caps_active_flows_and_emits_evictions` |
+| Site detector score matches Python fixtures | `site/src/features/simulator/engine.test.ts` |
 
 Generated numbers come from code. Regenerate them with `make reproduce`; do not hand-copy
 metrics into prose.
@@ -192,18 +195,6 @@ configs/         reproducible experiment parameters
 output/reports/  generated reports (git-ignored)
 tests/           privacy, ingestion, feature, split, model, store, runner and API checks
 ```
-
-## Claims and proof
-
-| Claim | Proof |
-|---|---|
-| Privacy by construction (HMAC ids, no payload) | `tests/test_pcap_ingestion.py`, `tests/test_privacy_beacon.py` |
-| Leakage-aware splits S1-S6 | `tests/test_splits.py`, `tests/test_runner.py` |
-| Beacon detector explainable | `tests/test_privacy_beacon.py` |
-| Multi-seed evaluation with bootstrap CIs | `tests/test_runner.py`, `output/reports/synthetic-evaluation.json` |
-| Drift endpoint | `tests/test_drift.py` |
-| Real dataset loaders with licence gating | `tests/test_datasets.py` |
-| CLI commands | `tests/test_cli.py` |
 
 Live site: https://nihalmachhi.github.io/CipherScope/
 

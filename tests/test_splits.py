@@ -10,6 +10,7 @@ from cipherscope.splits.strategies import (
     by_host,
     by_session,
     by_time,
+    capture_kfold,
     leave_one_environment_out_folds,
 )
 
@@ -69,3 +70,13 @@ def test_time_split_preserves_chronology(rows) -> None:
     assert max(float(rows[int(index)]["started_at"]) for index in train) <= min(
         float(rows[int(index)]["started_at"]) for index in test
     )
+
+
+def test_capture_kfold_keeps_every_capture_in_exactly_one_test_fold(rows) -> None:
+    folds = capture_kfold(rows, n_splits=4)
+    assert len(folds) == 4
+    tested: list[str] = []
+    for train, test in folds.values():
+        assert_group_disjoint(rows, train, test, "capture_id")
+        tested.extend(str(rows[int(index)]["capture_id"]) for index in test)
+    assert sorted(tested) == sorted(str(row["capture_id"]) for row in rows)

@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from scapy.all import IP, TCP, Raw, wrpcap
 
-from cipherscope.ingest.pcap import read_pcap
+from cipherscope.ingest.assembler import FlowAssembler, PacketHeader
+from cipherscope.ingest.pcap import iter_pcap, read_pcap
 from cipherscope.store.jsonl import serialize_flow
 
 SALT = "unit-test-salt-long-enough"
@@ -69,3 +70,32 @@ def test_rst_closes_flow_immediately(tmp_path) -> None:
     flows = read_pcap(capture, capture_id="rst-lab", environment="lab", salt=SALT)
     assert len(flows) == 2
     assert len(flows[0].packets) == 2
+
+
+def test_pcap_iterator_yields_closed_flows_before_capture_ends(tmp_path) -> None:
+    capture = tmp_path / "stream.pcap"
+    a, b = "192.0.2.31", "198.51.100.31"
+    wrpcap(
+        str(capture),
+        [
+            _packet(a, b, 52000, 443, "S", 100.0),
+            _packet(b, a, 443, 52000, "RA", 100.1),
+            _packet(a, b, 52001, 443, "S", 101.0),
+        ],
+    )
+    iterator = iter_pcap(capture, capture_id="stream", environment="lab", salt=SALT)
+    first = next(iterator)
+    assert len(first.packets) == 2
+    assert len(list(iterator)) == 1
+
+
+def test_assembler_caps_active_flows_and_emits_evictions() -> None:
+    assembler = FlowAssembler(
+        capture_id="bounded", environment="lab", salt=SALT, max_active_flows=1
+    )
+    assembler.add(PacketHeader(1.0, "192.0.2.40", "198.51.100.40", 53000, 443, "tcp", 60))
+    assembler.add(PacketHeader(2.0, "192.0.2.41", "198.51.100.41", 53001, 443, "tcp", 60))
+    assert len(assembler._states) == 1
+    completed = assembler.drain_completed()
+    assert len(completed) == 1
+    assert len(completed[0].packets) == 1

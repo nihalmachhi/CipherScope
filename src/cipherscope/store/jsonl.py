@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
 
@@ -101,9 +102,16 @@ def load_rows(path: str | Path, *, validate: bool = True) -> list[dict[str, Any]
 
 def write_feature_jsonl(flows: list[FlowRecord], path: str | Path) -> int:
     """Write validated, metadata-only flow rows to JSONL."""
+    return write_feature_jsonl_stream(flows, path)
+
+
+def write_feature_jsonl_stream(flows: Iterable[FlowRecord], path: str | Path) -> int:
+    """Serialize flows incrementally so large captures are not held in memory."""
     output = Path(path)
     output.parent.mkdir(parents=True, exist_ok=True)
+    count = 0
     with output.open("w", encoding="utf-8") as stream:
         for flow in flows:
             stream.write(json.dumps(serialize_flow(flow), sort_keys=True) + "\n")
-    return len(flows)
+            count += 1
+    return count

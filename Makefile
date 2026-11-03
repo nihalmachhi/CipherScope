@@ -7,7 +7,7 @@ demo:
 evaluate:
 	uv run python -m cipherscope.eval.runner
 
-reproduce: demo evaluate
+reproduce: demo evaluate site-fixtures
 
 test:
 	uv run pytest

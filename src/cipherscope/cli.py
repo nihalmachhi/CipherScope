@@ -4,8 +4,8 @@ import argparse
 
 from cipherscope.datasets.registry import load_dataset
 from cipherscope.ingest.csv_flows import read_packet_csv
-from cipherscope.ingest.pcap import read_pcap
-from cipherscope.store.jsonl import write_feature_jsonl
+from cipherscope.ingest.pcap import iter_pcap
+from cipherscope.store.jsonl import write_feature_jsonl, write_feature_jsonl_stream
 
 
 def _add_common(parser: argparse.ArgumentParser) -> None:
@@ -45,12 +45,17 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     if args.command == "ingest-pcap":
-        flows = read_pcap(
-            args.path,
-            capture_id=args.capture_id,
-            environment=args.environment,
-            label=args.label,
+        count = write_feature_jsonl_stream(
+            iter_pcap(
+                args.path,
+                capture_id=args.capture_id,
+                environment=args.environment,
+                label=args.label,
+            ),
+            args.output,
         )
+        print(f"Wrote {count} metadata-only flows to {args.output}")
+        return 0
     elif args.command == "ingest-csv":
         flows = read_packet_csv(
             args.path,
