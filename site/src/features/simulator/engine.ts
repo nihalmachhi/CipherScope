@@ -8,6 +8,26 @@ export interface PeriodicityResult {
   autocorrelation: number;
 }
 
+export interface BeaconFlow { host_hash: string; peer_hash: string; started_at: number }
+
+export function detectBeacons(flows: BeaconFlow[], options: { minConnections?: number; threshold?: number } = {}): { host_hash: string; peer_hash: string; score: number }[] {
+  const minConnections = options.minConnections ?? 4;
+  const threshold = options.threshold ?? 0.75;
+  const groups = new Map<string, BeaconFlow[]>();
+  for (const flow of flows) {
+    const [host_hash, peer_hash] = [flow.host_hash, flow.peer_hash].sort();
+    const key = `${host_hash}|${peer_hash}`;
+    groups.set(key, [...(groups.get(key) ?? []), flow]);
+  }
+  return [...groups].flatMap(([key, group]) => {
+    if (group.length < minConnections) return [];
+    const score = periodicityScore(group.map((flow) => flow.started_at)).score;
+    if (score < threshold) return [];
+    const [host_hash, peer_hash] = key.split("|");
+    return [{ host_hash, peer_hash, score }];
+  });
+}
+
 function median(values: number[]): number {
   if (values.length === 0) return 0;
   const sorted = [...values].sort((a, b) => a - b);

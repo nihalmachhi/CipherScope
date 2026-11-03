@@ -7,8 +7,8 @@ export function Hero() {
       <h1>{content.hero.headline}</h1>
       <p>{content.hero.subcopy}</p>
       <div className="cta">
-        <a className="pill w" href="#start">Run it locally</a>
-        <a className="pill" href="https://github.com/nihalmachhi/CipherScope">View on GitHub</a>
+        <a className="pill w" href="#start">{content.nav.runLabel}</a>
+        <a className="pill" href="https://github.com/nihalmachhi/CipherScope">{content.nav.githubLabel}</a>
       </div>
       <div className="wrap">
         <Window />

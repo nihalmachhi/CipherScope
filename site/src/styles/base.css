@@ -11,6 +11,7 @@ h1,h2,h3,p{margin:0}h1,h2,h3{font-family:var(--fd);text-wrap:balance}a{color:inh
 :focus-visible{outline:2px solid var(--wh);outline-offset:3px}
 .wrap{max-width:1120px;margin:0 auto;padding:0 max(16px,env(safe-area-inset-left,0))}
 nav.top{display:flex;align-items:center;gap:26px;height:72px}
+.nav-inner{display:flex;align-items:center;gap:26px;width:100%}
 .brand{display:flex;gap:9px;align-items:center;font:600 1.1rem var(--fd);text-decoration:none;letter-spacing:-.02em}
 .links{display:flex;gap:24px;color:var(--mu);font-size:.92rem;margin-left:14px}.links a{text-decoration:none}.links a:hover{color:var(--fg)}
 .sp{margin-left:auto;display:flex;gap:8px}
@@ -116,3 +117,7 @@ details{border-top:1px solid var(--ln);padding:16px 0}details:last-of-type{borde
 @media(prefers-reduced-motion:reduce){.flow *,.pulse{animation:none!important}.flow circle{display:none}.rv-wrap.arm .rv{opacity:1;transform:none;filter:none;transition:none}}
 @media(prefers-reduced-motion:reduce){.rise,.v s,.v b,.grow{animation-duration:.01s;animation-delay:0s}.cv{transition:none}.bar{display:none}}
 .skip-link{position:absolute;left:-9999px;top:0}.skip-link:focus{left:16px;top:16px;z-index:100;background:var(--wh);color:#111;padding:8px 12px;border-radius:8px}
+.rv-wrap .rv{opacity:0;transform:translateY(8px);transition:opacity .5s ease,transform .5s ease}.rv-wrap.arm .rv{opacity:1;transform:none}
+.code-tabs{display:flex;gap:4px;width:max-content;max-width:100%;margin:26px auto 0;padding:4px;border:1px solid var(--ln);border-radius:99px;background:var(--p)}.code-tabs button{border:0;border-radius:99px;padding:7px 14px;background:transparent;color:var(--mu);font:500 .82rem var(--fb);cursor:pointer}.code-tabs button[aria-selected=true]{background:var(--p2);color:var(--fg)}.qs .code{overflow:auto;max-width:100%;white-space:pre-wrap;overflow-wrap:anywhere}.qs pre code{font:400 .76rem/1.7 var(--fm);color:var(--mu)}
+.result-row .track i{display:block;width:var(--result-width);height:100%;background:var(--accent);border-radius:inherit}
+@media(prefers-reduced-motion:reduce){.rv-wrap .rv{opacity:1;transform:none;transition:none}}

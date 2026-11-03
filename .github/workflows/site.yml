@@ -13,8 +13,19 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      CIPHERSCOPE_HASH_SALT: ci-only-salt-not-a-secret-0001
+      CIPHERSCOPE_ADMIN_TOKEN: ci-only-token-not-a-secret-0001
     steps:
       - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - run: uv sync --frozen --extra dev
+      - run: uv run python -m cipherscope.datasets.synthetic --output data/demo_flows.jsonl
+      - run: uv run python -m cipherscope.eval.runner
+      - run: uv run python site/scripts/export_fixtures.py
+      - run: git diff --exit-code -- site/src/data/results.generated.json site/src/features/simulator/__fixtures__
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -27,6 +38,8 @@ jobs:
       - run: npm run typecheck
         working-directory: site
       - run: npm test -- --run
+        working-directory: site
+      - run: npm run test:coverage
         working-directory: site
       - run: npm run build
         working-directory: site

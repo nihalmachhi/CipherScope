@@ -1,44 +1,31 @@
 import results from "../data/results.generated.json";
+import { content } from "../data/content";
+
+type Metric = { macro_f1: number; accuracy: number };
+const report = results as {
+  random_split: { macro_f1: number; std: number };
+  cross_environment: { macro_f1: number; std: number };
+  robustness: Record<string, Metric>;
+  data_kind: string;
+};
+
+function Bar({ label, value }: { label: string; value: number }) {
+  return <div className="result-row"><span>{label}</span><div className="track"><i style={{ "--result-width": `${Math.max(0, Math.min(100, value * 100))}%` } as React.CSSProperties} /></div><b>{(value * 100).toFixed(1)}%</b></div>;
+}
 
 export function Results() {
-  const r = results as {
-    random_split: { macro_f1: number; std: number };
-    cross_environment: { macro_f1: number; std: number };
-    data_kind: string;
-  };
+  const robust = report.robustness;
   return (
     <section className="sec" id="results">
       <div className="wrap">
-        <h2>Compared on the <span className="m">same <i className="ico" style={{ "--c": "#06b6d4" } as React.CSSProperties}><svg viewBox="0 0 24 24"><path d="M7 19v-6M12 19V6M17 19v-10"/></svg></i> four cases.</span></h2>
-        <p className="lead2">Both prompts run the traceforge-faq-v1 dataset. Figures from the bundled demo run:</p>
+        <h2>{content.results.heading}</h2>
+        <p className="lead2">{content.results.intro.replace("synthetic", report.data_kind)}</p>
         <div className="rg">
-          <div className="rc">
-            <h3>Baseline</h3>
-            <p>The reference prompt every candidate is compared against.</p>
-            <div className="tb">
-              <div className="mr"><span>Task</span><div className="track"><div className="grow" style={{ "--w": "100%", "--c": "#8c8c95" } as React.CSSProperties} /></div><b>100%</b></div>
-              <div className="mr"><span>Grounded</span><div className="track"><div className="grow" style={{ "--w": "100%", "--c": "#8c8c95" } as React.CSSProperties} /></div><b>100%</b></div>
-              <div className="mr"><span>Relevance</span><div className="track"><div className="grow" style={{ "--w": "100%", "--c": "#8c8c95" } as React.CSSProperties} /></div><b>100%</b></div>
-            </div>
-          </div>
-          <div className="rc">
-            <h3>Candidate</h3>
-            <p>An intentionally regressed prompt that fails two cases.</p>
-            <div className="tb">
-              <div className="mr"><span>Task</span><div className="track"><div className="grow" style={{ "--w": `${r.random_split.macro_f1 * 100}%`, "--c": "var(--bad)" } as React.CSSProperties} /></div><b>{(r.random_split.macro_f1 * 100).toFixed(0)}%</b></div>
-              <div className="mr"><span>Grounded</span><div className="track"><div className="grow" style={{ "--w": `${r.cross_environment.macro_f1 * 100}%`, "--c": "var(--bad)" } as React.CSSProperties} /></div><b>{(r.cross_environment.macro_f1 * 100).toFixed(0)}%</b></div>
-            </div>
-          </div>
-          <div className="rc">
-            <h3>Gate</h3>
-            <p>Default limits: task success 0 points, groundedness 5 points.</p>
-            <div className="tb">
-              <div className="mr"><span>Task</span><div className="track"><div className="grow" style={{ "--w": "50%", "--c": "#a78bfa" } as React.CSSProperties} /></div><b>−50 pts</b></div>
-              <div className="mr"><span>Result</span><div className="track"><div className="grow" style={{ "--w": "100%", "--c": "#a78bfa" } as React.CSSProperties} /></div><b>exit 1</b></div>
-            </div>
-          </div>
+          <article className="rc"><h3>{content.results.randomTitle}</h3><p>{content.results.randomCopy}</p><Bar label="Macro F1" value={report.random_split.macro_f1} /><small>Across configured seeds; σ {(report.random_split.std * 100).toFixed(2)} points.</small></article>
+          <article className="rc"><h3>{content.results.environmentTitle}</h3><p>{content.results.environmentCopy}</p><Bar label="Macro F1" value={report.cross_environment.macro_f1} /><small>Across configured seeds; σ {(report.cross_environment.std * 100).toFixed(2)} points.</small></article>
+          <article className="rc"><h3>{content.results.robustnessTitle}</h3><p>{content.results.robustnessCopy}</p><Bar label={content.results.firstPacketLabel} value={robust.first_4_packets.macro_f1} /><Bar label={content.results.cleanLabel} value={robust.clean.macro_f1} /><small>{content.results.robustnessDetail}</small></article>
         </div>
-        <p className="note">Synthetic data. These numbers show the pipeline works; they are not evidence of real-world detection.</p>
+        <p className="note">{content.results.syntheticNote}</p>
       </div>
     </section>
   );

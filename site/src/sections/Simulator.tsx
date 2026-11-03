@@ -1,44 +1,46 @@
-import { useState } from "react";
-import { periodicityScore } from "../features/simulator/engine";
+import { useMemo, useState } from "react";
+import { detectBeacons, periodicityScore } from "../features/simulator/engine";
+import { content } from "../data/content";
+import styles from "./Simulator.module.css";
 
-function buildBeacon(period: number, jitter: number, n: number): number[] {
-  const out: number[] = [];
-  for (let i = 0; i < n; i++) {
-    out.push(i * period + (Math.sin(i) * jitter * period) / 100);
-  }
-  return out;
+type Traffic = "beacon" | "web" | "streaming";
+
+function makeTimes(kind: Traffic, period: number, jitter: number, count: number): number[] {
+  return Array.from({ length: count }, (_, i) => {
+    const offset = kind === "beacon" ? Math.sin(i * 1.7) : kind === "web" ? Math.sin(i * 12.9) * 0.8 + (i % 3) * 0.35 : Math.sin(i * 2.1) * 5;
+    return i * period + offset * period * jitter / 100;
+  });
 }
 
 export function Simulator() {
+  const [traffic, setTraffic] = useState<Traffic>("beacon");
   const [period, setPeriod] = useState(30);
-  const [jitter, setJitter] = useState(5);
+  const [jitter, setJitter] = useState(8);
+  const [padding, setPadding] = useState(0);
   const [threshold, setThreshold] = useState(0.75);
-  const [n, setN] = useState(8);
-  const times = buildBeacon(period, jitter, n);
-  const res = periodicityScore(times);
-  const fires = res.score >= threshold;
-  return (
-    <section className="sec" id="try">
-      <div className="wrap">
-        <h2 style={{ fontSize: "clamp(1.8rem,4vw,2.6rem)", letterSpacing: "-0.035em", lineHeight: 1.05, maxWidth: "18ch" }}>Beacon lab</h2>
-        <p style={{ marginTop: 12, color: "var(--mu)", maxWidth: "60ch" }}>Generate synthetic flows and run a TypeScript port of the real beacon detector.</p>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginTop: 24 }}>
-          <div style={{ background: "var(--p)", border: "1px solid var(--ln)", borderRadius: 16, padding: 20 }}>
-            <label>Period (s): {period}<br /><input type="range" min={5} max={120} value={period} onChange={(e) => setPeriod(+e.target.value)} /></label><br />
-            <label>Jitter (%): {jitter}<br /><input type="range" min={0} max={60} value={jitter} onChange={(e) => setJitter(+e.target.value)} /></label><br />
-            <label>Connections: {n}<br /><input type="range" min={4} max={20} value={n} onChange={(e) => setN(+e.target.value)} /></label><br />
-            <label>Threshold: {threshold.toFixed(2)}<br /><input type="range" min={0.5} max={0.95} step={0.05} value={threshold} onChange={(e) => setThreshold(+e.target.value)} /></label>
-            <button onClick={() => { setJitter(60); setPeriod(30); }} style={{ marginTop: 12, padding: "6px 12px", borderRadius: 8, border: "1px solid var(--ln)", background: "var(--p2)", color: "var(--fg)", cursor: "pointer" }}>Make it evade</button>
-          </div>
-          <div style={{ background: "var(--p)", border: "1px solid var(--ln)", borderRadius: 16, padding: 20, fontFamily: "var(--fm)", fontSize: "0.85rem" }}>
-            <div>score: {res.score}</div>
-            <div>period_s: {res.period_s}</div>
-            <div>within 10%: {res.within_ten_percent}</div>
-            <div>robust_cv: {res.robust_cv}</div>
-            <div style={{ marginTop: 12, color: fires ? "var(--bad)" : "var(--ok)" }}>{fires ? "Alert fires" : "No alert"}</div>
-          </div>
-        </div>
+  const [count, setCount] = useState(8);
+  const times = useMemo(() => makeTimes(traffic, period, jitter, count), [traffic, period, jitter, count]);
+  const result = periodicityScore(times);
+  const alert = detectBeacons(times.map((started_at) => ({ host_hash: "h:demo-a", peer_hash: "h:demo-b", started_at })), { threshold });
+  const flows = Array.from({ length: 28 }, (_, i) => Math.max(9, Math.min(64, 14 + (i % 7) * 5 + Math.sin(i * 2) * padding)));
+  return <section className="sec" id="try"><div className="wrap">
+    <h2>{content.simulator.heading}</h2>
+    <p className="lead2">{content.simulator.intro}</p>
+    <div className={styles.lab}>
+      <div className={styles.controls}>
+        <label>{content.simulator.traffic}<select value={traffic} onChange={(e) => setTraffic(e.target.value as Traffic)}><option value="web">{content.simulator.web}</option><option value="streaming">{content.simulator.streaming}</option><option value="beacon">{content.simulator.beacon}</option></select></label>
+        <label>{content.simulator.period} <output>{period} s</output><input type="range" min="5" max="120" value={period} onChange={(e) => setPeriod(+e.target.value)} /></label>
+        <label>{content.simulator.jitter} <output>{jitter}%</output><input type="range" min="0" max="60" value={jitter} onChange={(e) => setJitter(+e.target.value)} /></label>
+        <label>{content.simulator.padding} <output>{padding}%</output><input type="range" min="0" max="50" value={padding} onChange={(e) => setPadding(+e.target.value)} /></label>
+        <label>{content.simulator.connections} <output>{count}</output><input type="range" min="4" max="20" value={count} onChange={(e) => setCount(+e.target.value)} /></label>
+        <label>{content.simulator.threshold} <output>{threshold.toFixed(2)}</output><input type="range" min="0.5" max="0.95" step="0.05" value={threshold} onChange={(e) => setThreshold(+e.target.value)} /></label>
+        <button className="pill" type="button" onClick={() => { setTraffic("beacon"); setJitter(60); }}>{content.simulator.evade}</button>
       </div>
-    </section>
-  );
+      <div className={styles.output}>
+        <div className={styles.result} aria-live="polite"><span className={alert.length ? styles.flagged : ""}>{alert.length ? content.simulator.candidate : content.simulator.noCandidate}</span><b>{result.score.toFixed(3)}</b><small>{content.simulator.score} · {content.simulator.interval} {result.period_s.toFixed(1)} s</small><p>{content.simulator.explanation}</p></div>
+        <div className={styles.chart} aria-label={content.simulator.shape}><div className={styles.bars}>{flows.map((height, i) => <i key={i} style={{ "--bar-height": `${height}px`, "--bar-align": i % 2 ? "flex-end" : "flex-start" } as React.CSSProperties} />)}</div><small>{content.simulator.shape}</small></div>
+        <div className={styles.intervals}><small>{content.simulator.observed}</small><div>{times.slice(1).map((time, i) => <span key={i} style={{ "--interval-width": `${Math.max(4, Math.min(100, ((time - times[i]) / period) * 50))}%` } as React.CSSProperties} />)}</div></div>
+      </div>
+    </div>
+  </div></section>;
 }

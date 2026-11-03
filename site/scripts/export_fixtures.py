@@ -27,10 +27,10 @@ def main() -> None:
 
     report = json.loads(REPORT.read_text(encoding="utf-8"))
     s1 = report["splits"]["S1_random_caution_only"]["summary"]["macro_f1"]
-    s4 = report["splits"]["S4_cross_dataset"]["summary"]["macro_f1"]
+    s5 = report["splits"]["S5_leave_one_environment_out"]["pooled"]["summary"]["macro_f1"]
     results = {
         "random_split": {"macro_f1": s1["mean"], "std": s1["std"]},
-        "cross_environment": {"macro_f1": s4["mean"], "std": s4["std"]},
+        "cross_environment": {"macro_f1": s5["mean"], "std": s5["std"]},
         "robustness": report["robustness"],
         "data_kind": report["data_kind"],
     }

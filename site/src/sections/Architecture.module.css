@@ -1,0 +1,4 @@
+.scroller{max-width:100%;overflow-x:auto;padding:8px 0 14px;margin-top:26px}.diagram{display:block;width:100%;min-width:850px;height:auto;overflow:visible}.connector{fill:none;stroke:var(--mu);stroke-width:1.2;stroke-dasharray:4 4;animation:dash 1.2s linear infinite}.node rect{fill:var(--p2);stroke:var(--ln);animation:light 6.3s ease-in-out infinite;animation-delay:var(--delay)}.node text{font:500 10px var(--fm);fill:var(--fg)}.final rect{animation-name:lightFinal}.packet{fill:var(--wh)}
+.static .connector,.static .node rect{animation:none}.static .packet{display:none}
+@keyframes light{0%,18%,100%{stroke:var(--ln);fill:var(--p2)}7%{stroke:var(--accent);fill:#252116}}@keyframes lightFinal{0%,18%,100%{stroke:var(--ln);fill:var(--p2)}7%{stroke:var(--bad);fill:#2a1d17}}@keyframes dash{to{stroke-dashoffset:-8}}
+@media(prefers-reduced-motion:reduce){.connector,.node rect{animation:none}.packet{display:none}}

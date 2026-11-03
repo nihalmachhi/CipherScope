@@ -15,6 +15,8 @@ All notable changes to this project are documented in this file.
 - Capture-grouped K-fold results, train-only isotonic calibration, permutation importance, and a seeded beacon precision/recall smoke benchmark.
 - Streaming PCAP iteration with a bounded active-flow table and completion buffer.
 - Restored the local dashboard with the existing project icon and matching dark palette; added its production build to CI.
+- Rebuilt the site copy and evidence from typed content, added accessible tabs and keyboard controls, a lazy-loaded synthetic beacon lab, a separate reduced-motion-aware architecture flow, and Bash/PowerShell quick-start tabs.
+- Added generated S5 environment metrics, Python-to-TypeScript detector parity fixtures, site coverage enforcement, and a Pages workflow that checks fixture freshness before deployment.
 
 ### Fixed
 - P0-1 FIN handling in PCAP ingestion.
