@@ -7,6 +7,7 @@ RUN pip install --no-cache-dir --prefix=/install .
 FROM python:3.12-slim
 WORKDIR /app
 COPY --from=builder /install /usr/local
+COPY configs ./configs
 RUN mkdir -p /app/data /app/output/reports && chown -R 65534:65534 /app/data /app/output
 ENV PYTHONDONTWRITEBYTECODE=1
 USER 65534:65534

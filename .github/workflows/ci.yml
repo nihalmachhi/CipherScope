@@ -51,3 +51,5 @@ jobs:
       - uses: actions/checkout@v4
       - run: docker compose config -q
       - run: docker compose build
+      - name: Verify the image can load its evaluation config
+        run: docker compose run --rm api python -c "from cipherscope.eval.runner import load_config; load_config()"
