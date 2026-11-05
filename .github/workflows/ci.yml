@@ -15,7 +15,7 @@ jobs:
       CIPHERSCOPE_HASH_SALT: ci-only-salt-not-a-secret-0001
       CIPHERSCOPE_ADMIN_TOKEN: ci-only-token-not-a-secret-0001
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
@@ -31,7 +31,7 @@ jobs:
   dashboard:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -48,7 +48,7 @@ jobs:
       CIPHERSCOPE_HASH_SALT: ci-only-salt-not-a-secret-0001
       CIPHERSCOPE_ADMIN_TOKEN: ci-only-token-not-a-secret-0001
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - run: docker compose config -q
       - run: docker compose build
       - name: Verify the image can load its evaluation config
