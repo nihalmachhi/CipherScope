@@ -174,6 +174,9 @@ make test        # pytest
 make reproduce   # regenerate synthetic data and the report
 ```
 
+The point-in-time test, fresh-clone and container record is in
+[`docs/qa.md`](docs/qa.md).
+
 ## Project layout
 
 ```text
